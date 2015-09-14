@@ -1,3 +1,4 @@
 import("raster","methods")
 exportClasses(sdmModel, singleSpecies, multipleSpecies, SpeciesDataList, sdmEvaluate, sdmEvaluates, sdmSettings)
 exportMethods(sdmData, sdm, sdmSetting, glmSetting, roc, evaluates)
+exportPattern("^[[:alpha:]]+")
