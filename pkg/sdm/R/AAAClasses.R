@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  June 2014
-# Version 2.0
+# Version 2.1
 # Licence GPL v3
 
 
@@ -466,6 +466,19 @@ setClass(".gamSettings",
          }
 )
 #-----------
+
+setClass(".maxentSettings",
+         representation(
+           basicSettings='.basicSettingsORnull',
+           factors = "characterORnull",
+           args = "characterORnull",
+           removeDuplicates = "logical",
+           path = "characterORnull",
+           otherSettings='list',
+           predictSettings='list'
+         )
+)
+
 ###############
 
 setClass("sdmEvaluate",

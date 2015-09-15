@@ -29,7 +29,7 @@ gui <- function() {
                                   br()
                                   
                   ),
-                  shinyFilesButton('files', label='File select', title='Please select a file', multiple=FALSE),
+                 # shinyFilesButton('files', label='File select', title='Please select a file', multiple=FALSE),
                   bsCollapsePanel("Models Settings",
                                   checkboxGroupInput("methods","Methods",c("GLM","GAM","BRT","RF","SVM","MARS","NNet","Bioclim","Domin","Mahalanobis","Maxent","Maxlike","Ensemble"),inline=T, selected="GLM"),
                                   hr(),
@@ -91,7 +91,7 @@ gui <- function() {
       method <- reactive({
         paste(input$methods,collapse=', ')
       })
-      shinyFileChoose(input, 'files', session=session,roots=c(wd='.'), filetypes=c('', '.txt'))
+      #shinyFileChoose(input, 'files', session=session,roots=c(wd='.'), filetypes=c('', '.txt'))
       ss <- reactive({
         if (!input$run) return (NULL)
         if (!is.null(train)) {
