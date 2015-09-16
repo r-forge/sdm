@@ -1,11 +1,11 @@
 Package: sdm
 Type: Package
 Title: Species Distribution Modelling
-Version: 0.0-2
-Date: 2015-09-14
+Version: 0.0-3
+Date: 2015-09-15
 Author: Babak Naimi, Miguel Bastos Araujo
 Depends:methods, raster
-Suggests: rgdal (>= 0.6-28), mgcv, gbm, kernlab, randomForest
+Suggests: rgdal (>= 0.6-28), mgcv, gbm, kernlab, randomForest, shiny, shinyBS, shinythemes, leaflet
 Maintainer: Babak Naimi <naimi.b@gmail.com>
 Description: sdm is an extendable framework to develop species distributions models using individual and community-based approaches, generate ensembles of models, evaluate the models, and predict species potential distributions in space and time.
 License: GPL (>= 3)
