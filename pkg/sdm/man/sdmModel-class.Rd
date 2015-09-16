@@ -11,6 +11,14 @@
 \alias{sdmEvaluates-class}
 \alias{sdmSettings-class}
 
+\alias{CRSorNULL-class}
+\alias{characterORmissing-class}
+\alias{characterORnull-class}
+\alias{formulaORnull-class}
+\alias{listORnull-class}
+\alias{speciesData-class}
+\alias{vectorORnull-class}
+
 \alias{show,sdmModel-method}
 \alias{show,singleSpecies-method}
 \alias{show,multipleSpecies-method}
