@@ -1,4 +1,4 @@
-import("raster","methods")
+import("raster","methods","sp")
 importFrom("graphics", "abline", "legend", "par", "plot", "points")
 importFrom("stats", "as.formula", "cor", "cov", "formula", "glm",
              "mahalanobis", "predict.glm", "supsmu", "terms",
@@ -6,4 +6,4 @@ importFrom("stats", "as.formula", "cor", "cov", "formula", "glm",
 importFrom("utils", "combn", "data", "read.csv")
 exportClasses(sdmModel, singleSpecies, multipleSpecies, SpeciesDataList, sdmEvaluate, sdmEvaluates, sdmSettings)
 exportMethods(sdmData, sdm, sdmSetting, glmSetting, roc, evaluates)
-exportPattern("^[[:alpha:]]+")
+exportPattern("^[^\\.]")
