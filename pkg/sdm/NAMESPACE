@@ -1,9 +1,9 @@
 import("raster","methods","sp")
-importFrom("graphics", "abline", "legend", "par", "plot", "points")
+importFrom("graphics", "abline", "legend", "par", "points")
 importFrom("stats", "as.formula", "cor", "cov", "formula", "glm",
              "mahalanobis", "predict.glm", "supsmu", "terms",
              "wilcox.test")
 importFrom("utils", "combn", "data", "read.csv")
 exportClasses(sdmModel, singleSpecies, multipleSpecies, SpeciesDataList, sdmEvaluate, sdmEvaluates, sdmSettings)
-exportMethods(sdmData, sdm, sdmSetting, glmSetting, roc, evaluates)
+exportMethods(sdmData, sdm, sdmSetting, glmSetting, roc, evaluates, gui,pca)
 exportPattern("^[^\\.]")
