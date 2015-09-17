@@ -5,5 +5,5 @@ importFrom("stats", "as.formula", "cor", "cov", "formula", "glm",
              "wilcox.test")
 importFrom("utils", "combn", "data", "read.csv")
 exportClasses(sdmModel, singleSpecies, multipleSpecies, SpeciesDataList, sdmEvaluate, sdmEvaluates, sdmSettings)
-exportMethods(sdmData, sdm, sdmSetting, glmSetting, roc, evaluates, gui,pca)
+exportMethods(sdmData, sdm, sdmSetting, glmSetting, roc, evaluates, gui,pca, thresholds, getRoc,read.sdm,write.sdm)
 exportPattern("^[^\\.]")

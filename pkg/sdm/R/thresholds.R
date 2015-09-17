@@ -102,15 +102,15 @@
 #-----------
 # 
 # 
-# if (!isGeneric("thresholds")) {
-#   setGeneric("thresholds", function(x, ...)
-#     standardGeneric("thresholds"))
-# }	
-# 
-# 
-# setMethod('thresholds', signature(x='sdmEvaluate'),
-#           function(x, stat='',  ...) {
-#             #
-#           }
-# )
+if (!isGeneric("thresholds")) {
+  setGeneric("thresholds", function(x, ...)
+    standardGeneric("thresholds"))
+}	
+
+
+setMethod('thresholds', signature(x='sdmEvaluate'),
+          function(x, stat='',  ...) {
+            #
+          }
+)
 

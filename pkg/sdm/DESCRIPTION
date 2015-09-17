@@ -1,7 +1,7 @@
 Package: sdm
 Type: Package
 Title: Species Distribution Modelling
-Version: 0.0-8
+Version: 0.0-9
 Date: 2015-09-16
 Author: Babak Naimi, Miguel B. Araujo
 Depends: methods, sp (>= 1.0-13), raster
