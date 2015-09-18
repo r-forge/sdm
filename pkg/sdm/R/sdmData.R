@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  July 2014
-# Version 1.0
+# Version 1.1
 # Licence GPL v3
 
 
@@ -20,7 +20,32 @@
     else return(u == '1')
   }
 }
+
 #-------
+.pseudo_df <- function(df,predictors,n=1000,method='random',spn,nxy=NULL) {
+  nn <- colnames(df)
+  np <- names(predictors)
+  nf <- nn[nn %in% np]
+  if (missing(spn)) {
+    spn <- nn[!nn %in% np]
+    spn <- .excludeVector(spn,nxy)
+    l <- length(spn)
+    spn <- spn[unlist(lapply(spn,function(x) .isBinomial(df[,x])))]
+    if (length(spn) != l) stop('there are some variables in data that are neither predictors nor species!')
+  }
+  if (method %in% c('random','rand','Random','r','R')) {
+    if (!is.null(nxy)) {
+      s <- data.frame(sampleRandom(predictors,n,xy=TRUE))
+      colnames(s)[1:2] <- nxy
+      s <- s[,c(nxy,nf)]
+    } else s <- data.frame(sampleRandom(predictors,n))[,nf]
+    for (sp in spn) s[[sp]] <- 0
+  }
+  
+  rbind(df,s)
+}
+
+#----------
 .occurrence <- function(x) {
   if (is.logical(x)) {
     xx <- rep(0,length(x))
@@ -477,13 +502,15 @@
 ################
 
 if (!isGeneric("sdmData")) {
-  setGeneric("sdmData", function(train, predictors, formula, test, filename,crs)
+  setGeneric("sdmData", function(train, predictors, formula, test, filename,crs,pseudo,size)
     standardGeneric("sdmData"))
 }
 
 
 setMethod('sdmData', signature(train='data.frame',predictors='missing',formula='formula'), 
-          function(train, predictors,formula, test=NULL, filename=NULL,crs=NULL) {
+          function(train, predictors,formula, test=NULL, filename=NULL,crs=NULL,pseudo=FALSE) {
+            
+            if (missing(pseudo)) stop('to be able to generate pseudo absence, you need to introduce predictors as a raster object')
             if(missing(test)) test <- NULL
             if(missing(filename)) filename <- NULL
             if(missing(crs)) crs <- NULL
@@ -572,7 +599,8 @@ setMethod('sdmData', signature(train='data.frame',predictors='missing',formula='
 #----------
 
 setMethod('sdmData', signature(train='data.frame',predictors='missing',formula='missing'), 
-          function(train, predictors,formula, test=NULL, filename=NULL,crs=NULL) {
+          function(train, predictors,formula, test=NULL, filename=NULL,crs=NULL,pseudo=FALSE) {
+            if (missing(pseudo)) stop('to be able to generate pseudo absence, you need to introduce predictors as a raster object')
             if(missing(test)) test <- NULL
             if(missing(filename)) filename <- NULL
             if(missing(crs)) crs <- NULL
@@ -647,7 +675,8 @@ setMethod('sdmData', signature(train='data.frame',predictors='missing',formula='
 )
 ##----------------
 setMethod('sdmData', signature(train='SpatialPointsDataFrame',predictors='missing'), 
-          function(train, predictors,formula,test,filename,crs) {
+          function(train, predictors,formula,test,filename,crs,pseudo=FALSE) {
+            if (missing(pseudo)) stop('to be able to generate pseudo absence, you need to introduce predictors as a raster object')
             if(missing(test)) test <- NULL
             if(missing(filename)) filename <- NULL
             if(missing(crs)) crs <- NULL
@@ -807,12 +836,14 @@ setMethod('sdmData', signature(train='SpatialPointsDataFrame',predictors='missin
 
 #----------
 setMethod('sdmData', signature(train='SpatialPointsDataFrame',predictors='Raster'), 
-          function(train, predictors,formula, test, filename,crs) {
+          function(train, predictors,formula, test, filename,crs,pseudo=FALSE,size=1000) {
+            if (missing(pseudo)) pseudo <- FALSE
+            if (missing(size)) size <- 1000
             if(missing(test)) test <- NULL
             if(missing(filename)) filename <- NULL
             if(missing(crs)) crs <- NULL
             
-            rm.train <- c(0,0); rm.test <- c(0,0); nFact <- NULL
+            rm.train <- c(0,0); rm.test <- c(0,0); nFact <- NULL; rm.outside <- c(0,0)
             nxy <- coordnames(train)
             wF <- is.factor(predictors)
             
@@ -911,8 +942,13 @@ setMethod('sdmData', signature(train='SpatialPointsDataFrame',predictors='Raster
                   rm.test <- w[[2]]
                   rm(w)
                 }
-                if (length(nsp) == 1) d <- .createSingleSpecies(train,test,nsp,nf,nFact,nxy,crs)
-                else d <- .createMultipleSpecies(train,test,nsp,nf,nFact,nxy,crs)
+                if (length(nsp) == 1) {
+                  if (pseudo) {
+                    train <- .pseudo_df(train,predictors,n=size,spn = nsp,nxy=nxy)
+                  }
+                  
+                  d <- .createSingleSpecies(train,test,nsp,nf,nFact,nxy,crs)
+                } else d <- .createMultipleSpecies(train,test,nsp,nf,nFact,nxy,crs)
                 
               }
             } else {
@@ -983,11 +1019,27 @@ setMethod('sdmData', signature(train='SpatialPointsDataFrame',predictors='Raster
                         test <- NULL
                         warning(paste('No records for species "',spn,'" are available in the test data, therefore test data has not been used!',sep=''))
                       }
+                      if (length(unique(test[,nsp])) == 1) test <-.pseudo_df(test,predictors,n,nsp)
                     }
+                    
+                    if (pseudo) {
+                      train <- .pseudo_df(df = train,predictors = predictors,n = size,spn = nsp,nxy = nxy )
+                    }
+                    
                     d <- .createSingleSpecies(train,test,nsp,nf,nFact,nxy,crs)
                   } else {
                     train <- .df2list(train,nsp,c(nf,nFact,nxy))
-                    if (!is.null(test)) test <- .df2list(test,nsp.t,c(nf,nFact,nxy))
+                    if (!is.null(test)) {
+                      test <- .df2list(test,nsp.t,c(nf,nFact,nxy))
+                      if (pseudo) {
+                        for (i in seq_along(test)) {
+                          if (length(unique(test[[i]][,nsp])) == 1) test[[i]] <-.pseudo_df(test[[i]],predictors,n=size,spn = nsp,nxy=nxy)
+                        }
+                      }
+                    }
+                    if (pseudo) {
+                      for (i in seq_along(train)) train[[i]] <- .pseudo_df(train[[i]],predictors,n=size,spn=nsp,nxy=nxy)
+                    }
                     d <- .createSpeciesDataList(train,test,nsp=names(train),nf,nFact,nxy,crs)
                   }
                   
@@ -1004,12 +1056,14 @@ setMethod('sdmData', signature(train='SpatialPointsDataFrame',predictors='Raster
 
 #----------------
 setMethod('sdmData', signature(train='SpatialPoints',predictors='Raster'), 
-          function(train, predictors,formula, test, filename,crs) {
+          function(train, predictors,formula, test, filename,crs,pseudo=FALSE,size=1000) {
+            if (missing(pseudo)) pseudo <- FALSE
+            if (missing(size)) size <- 1000
             if(missing(test)) test <- NULL
             if(missing(filename)) filename <- NULL
             if(missing(crs)) crs <- NULL
             
-            rm.train <- c(0,0); rm.test <- c(0,0); nFact <- NULL
+            rm.train <- c(0,0); rm.test <- c(0,0); nFact <- NULL; rm.outside <- c(0,0)
             nxy <- coordnames(train)
             wF <- is.factor(predictors)
             
@@ -1087,6 +1141,9 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='Raster'),
                 nf <- .excludeVector(nf,nFact)
               }
               train <- .int.to.numeric(train)
+              if (pseudo) {
+                train <- .pseudo_df(train,predictors,n=size,spn=nsp,nxy=nxy)
+              }
               
               if (!is.null(test)) {
                 test <- data.frame(SPECIES=rep(1,nrow(test)),test,test.p)
@@ -1097,6 +1154,10 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='Raster'),
                 test <- w[[1]]
                 rm.test <- w[[2]]
                 rm(w)
+                if (pseudo) {
+                  if (length(unique(test[,nsp])) == 1) test <-.pseudo_df(test,predictors,n=size,spn=nsp,nxy)
+                }
+                
               }
               d <- .createSingleSpecies(train,test,nsp,nf,nFact,nxy,crs)
               
@@ -1124,7 +1185,9 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='Raster'),
               }
               
               train <- .int.to.numeric(train)
-              
+              if (pseudo) {
+                train <- .pseudo_df(train,predictors,n=size,spn=nsp,nxy=nxy)
+              }
               if (!is.null(test)) {
                 test <- data.frame(test,test.p)
                 rm(test.p)
@@ -1137,7 +1200,9 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='Raster'),
                     for (nn in nFact) test[,nn] <- factor(test[,nn])
                 }
                 test <- .int.to.numeric(test)
-                
+                if (pseudo) {
+                  if (length(unique(test[,nsp])) == 1) test <-.pseudo_df(test,predictors,n=size,spn=nsp,nxy)
+                }
                 w <- .dataClean(test)
                 test <- w[[1]]
                 rm.test <- w[[2]]

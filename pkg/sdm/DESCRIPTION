@@ -1,8 +1,8 @@
 Package: sdm
 Type: Package
 Title: Species Distribution Modelling
-Version: 0.0-9
-Date: 2015-09-16
+Version: 0.0-10
+Date: 2015-09-18
 Author: Babak Naimi, Miguel B. Araujo
 Depends: methods, sp (>= 1.0-13), raster
 Suggests: rgdal (>= 0.6-28), mgcv, gbm, kernlab, randomForest, shiny, shinyBS, shinythemes, leaflet
