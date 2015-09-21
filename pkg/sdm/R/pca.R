@@ -1,3 +1,7 @@
+# Author: Babak Naimi, naimi.b@gmail.com
+# Date :  September 2015
+# Version 1.0
+# Licence GPL v3
 
 if (!isGeneric("pca")) {
   setGeneric("pca", function(x,...)
@@ -18,7 +22,7 @@ setMethod('pca', signature(x='singleSpecies'),
           
 
 setMethod('pca', signature(x='multipleSpecies'), 
-          function(x) {
+          function(x,...) {
             n <- x@train@Features@featureNames
             x <- as.data.frame(x)[,n]
             d <- princomp(x,...)

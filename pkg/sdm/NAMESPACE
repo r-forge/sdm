@@ -2,8 +2,18 @@ import("raster","methods","sp")
 importFrom("graphics", "abline", "legend", "par", "points")
 importFrom("stats", "as.formula", "cor", "cov", "formula", "glm",
              "mahalanobis", "predict.glm", "supsmu", "terms",
-             "wilcox.test")
+             "wilcox.test","princomp")
 importFrom("utils", "combn", "data", "read.csv")
+importFrom("shiny", "shinyApp", "fluidPage", "HTML","radioButtons","selectizeInput","hr","br","checkboxGroupInput","numericInput",
+           "sliderInput","mainPanel","h3","textOutput","tabsetPanel","tabPanel","plotOutput","p","actionButton","updateSelectizeInput",
+           "observe","reactive","renderText","renderPrint","renderPlot")
+importFrom("shinythemes", "shinytheme")
+importFrom("shinyBS", "bsCollapsePanel")
+importFrom("leaflet", "leafletOutput","renderLeaflet","leaflet","addTiles","addMarkers","%>%")
+importFrom("mgcv", "gam")
+importFrom("kernlab", "ksvm")
+importFrom("randomForest", "randomForest")
+importFrom("gbm", "gbm")
 exportClasses(sdmModel, singleSpecies, multipleSpecies, SpeciesDataList, sdmEvaluate, sdmEvaluates, sdmSettings)
-exportMethods(sdmData, sdm, sdmSetting, glmSetting, roc, evaluates, gui,pca, thresholds, getRoc,read.sdm,write.sdm)
+exportMethods(sdmData, sdm, sdmSetting, glmSetting, roc, evaluates, gui,pca, thresholds, getRoc,read.sdm,write.sdm, ensemble)
 exportPattern("^[^\\.]")

@@ -508,10 +508,11 @@ if (!isGeneric("sdmData")) {
 
 
 setMethod('sdmData', signature(train='data.frame',predictors='missing',formula='formula'), 
-          function(train, predictors,formula, test=NULL, filename=NULL,crs=NULL,pseudo=FALSE) {
-            
-            if (missing(pseudo)) stop('to be able to generate pseudo absence, you need to introduce predictors as a raster object')
+          function(train, predictors,formula, test=NULL, filename=NULL,crs=NULL,pseudo=FALSE,size) {
+            if (missing(pseudo)) pseudo <- FALSE
+            if (pseudo)  stop('to be able to generate pseudo absence, you need to introduce predictors as a raster object')
             if(missing(test)) test <- NULL
+            if (missing(size)) size <- 1000
             if(missing(filename)) filename <- NULL
             if(missing(crs)) crs <- NULL
             
@@ -599,8 +600,10 @@ setMethod('sdmData', signature(train='data.frame',predictors='missing',formula='
 #----------
 
 setMethod('sdmData', signature(train='data.frame',predictors='missing',formula='missing'), 
-          function(train, predictors,formula, test=NULL, filename=NULL,crs=NULL,pseudo=FALSE) {
-            if (missing(pseudo)) stop('to be able to generate pseudo absence, you need to introduce predictors as a raster object')
+          function(train, predictors,formula, test=NULL, filename=NULL,crs=NULL,pseudo=FALSE,size) {
+            if (missing(pseudo)) pseudo <- FALSE
+            if (pseudo)  stop('to be able to generate pseudo absence, you need to introduce predictors as a raster object')
+            if (missing(size)) size <- 1000
             if(missing(test)) test <- NULL
             if(missing(filename)) filename <- NULL
             if(missing(crs)) crs <- NULL
@@ -675,8 +678,10 @@ setMethod('sdmData', signature(train='data.frame',predictors='missing',formula='
 )
 ##----------------
 setMethod('sdmData', signature(train='SpatialPointsDataFrame',predictors='missing'), 
-          function(train, predictors,formula,test,filename,crs,pseudo=FALSE) {
-            if (missing(pseudo)) stop('to be able to generate pseudo absence, you need to introduce predictors as a raster object')
+          function(train, predictors,formula,test,filename,crs,pseudo=FALSE,size) {
+            if (missing(pseudo)) pseudo <- FALSE
+            if (pseudo)  stop('to be able to generate pseudo absence, you need to introduce predictors as a raster object')
+            if (missing(size)) size <- 1000
             if(missing(test)) test <- NULL
             if(missing(filename)) filename <- NULL
             if(missing(crs)) crs <- NULL
