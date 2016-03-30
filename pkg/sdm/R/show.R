@@ -1,77 +1,40 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date :  June 2014
+# Date :  May 2015
 # Version 1.0
 # Licence GPL v3
 
-setMethod ('show' , 'singleSpecies',
+setMethod ('show' , 'sdmdata',
            function ( object ) {
              cat('class                                 :' , class(object), '\n')
              cat('===========================================================','\n')
-             cat('species name                          : ' , object@train@Occurrence@species.name , '\n')
-             cat('number of fearures                    : ' , if (!is.null(object@train@Features)) length(object@train@Features@featureNames) else NA, '\n')
-             cat('fearure names                         : ' , if (!is.null(object@train@Features)) {
-               if (length(object@train@Features@featureNames) > 3) paste(c(object@train@Features@featureNames[1:3],'...'),collapse=', ') else paste(object@train@Features@featureNames,collapse=', ')
+             cat('number of species                     : ' , length(object@species.names) , '\n')
+             cat('species names                         : ' , if (length(object@species.names) > 3) paste(c(object@species.names[1:3],'...'),collapse=', ') else paste(object@species.names,collapse=', ') , '\n')
+             cat('number of fearures                    : ' , length(object@features.name), '\n')
+             cat('fearure names                         : ' , if (length(object@features.name) > 0) {
+               if (length(object@features.name) > 3) paste(c(object@features.name[1:3],'...'),collapse=', ') else paste(object@features.name,collapse=', ')
              } else NA, '\n')
-             cat('type                                  : ' , if (object@train@Occurrence@presence.only) 'presence-only' else 'presence-absence', '\n')
-             cat('number of observations (train)        : ', length(object@train@Occurrence@Occurrence),'\n')
-             cat('has independet test data?             : ' , !is.null(object@test), '\n')
-             if (!is.null(object@test))
-               cat('number of observations (test)         : ', length(object@test@Occurrence@Occurrence),'\n' )
-             cat('has Coordinates?                      : ' , !is.null(object@train@coordinates) , '\n')
+             if (length(object@factors) > 0) {
+               cat('which feature is categorical (factor) : ' , 
+                 if (length(object@factors) > 3) paste(c(object@factors[1:3],'...'),collapse=', ') else paste(object@factors,collapse=', ')
+               , '\n') 
+             }
+             
+             typ <- c()
+             for (n in object@species.names) typ <- c(typ,object@species[[n]]@type)
+             if (length(unique(typ)) == 1) typ <- unique(typ)
+             hasTest <- 'test' %in% .getGroupNames(object,levels=TRUE)
+             hasTrain <- 'train' %in% .getGroupNames(object,levels=TRUE)
+             cat('type                                  : ', if (length(typ) > 3) paste(c(typ[1:3],'...'),collapse=', ') else paste(typ,collapse=', '), '\n')
+             cat('has independet test data?             : ' , hasTest, '\n')
+             if (hasTrain) {
+               cat('number of records                     : ', if (hasTest) paste('train-> ',length(.getGroupIndex(object,'train')),"; ",'test-> ',length(.getGroupIndex(object,'test')),sep='') else length(.getSpeciesIndex(object)),'\n')
+             } else
+             cat('number of records                     : ', if (is.null(object@features)) '0' else nrow(object@features),'\n')
+             cat('has Coordinates?                      : ' , !is.null(object@info) && !is.null(object@info@coords)  , '\n')
            }
 )
-
-setMethod ('show' , 'multipleSpecies',
-           function ( object ) {
-             cat('class                                     :' , class(object), '\n')
-             cat('===========================================================','\n')
-             cat('number of species                         : ' , length(object@train@Occurrence@species.names), '\n')
-             cat('species names                             : ' , if (length(object@train@Occurrence@species.names) > 3) paste(c(object@train@Occurrence@species.names[1:3],'...'),collapse=', ') else paste(object@train@Occurrence@species.names,collapse=', ') , '\n')
-             cat('number of fearures                        : ' , if (!is.null(object@train@Features)) length(object@train@Features@featureNames) else NA, '\n')
-             cat('fearure names                             : ' , if (!is.null(object@train@Features)) {
-               if (length(object@train@Features@featureNames) > 3) paste(c(object@train@Features@featureNames[1:3],'...'),collapse=', ') else paste(object@train@Features@featureNames,collapse=', ')
-             } else NA, '\n')
-             cat('type                                      : ' , 
-                 if (all(object@train@Occurrence@presence.only)) 'presence-only' 
-                 else if (all(!object@train@Occurrence@presence.only)) 'presence-absence' 
-                 else 'presence-absence AND presence-only', '\n')
-             cat('number of observations (train)            : ', nrow(object@train@Occurrence@Occurrence),'\n')
-             cat('has independet test data?                 : ' , if (is.null(object@test)) FALSE 
-                 else if (all(unlist(lapply(object@train@Occurrence@species.names,function(x) {x %in% object@test@Occurrence@species.names})))) TRUE
-                 else paste('Only ',length(object@test@Occurrence@species.names),' species have test data!',sep=''),'\n' )
-             if (!is.null(object@test))
-               cat('number of observations (test)             : ', nrow(object@test@Occurrence@Occurrence),'\n' )
-             cat('has Coordinates?                          : ' , !is.null(object@train@coordinates) , '\n')
-           }
-)
-
-#-------------
-setMethod ('show' , 'SpeciesDataList',
-           function ( object ) {
-             cat('class                                     :' , class(object), '\n')
-             cat('===========================================================','\n')
-             cat('number of species                         : ' , length(object@train@species.names), '\n')
-             cat('species names                             : ' , if (length(object@train@species.names) > 3) paste(c(object@train@species.names[1:3],'...'),collapse=', ') else paste(object@train@species.names,collapse=', ') , '\n')
-             cat('number of fearures                        : ' , if (!is.null(object@train@SpeciesDataList[[1]]@Features)) length(object@train@SpeciesDataList[[1]]@Features@featureNames) else NA, '\n')
-             cat('fearure names                             : ' , if (!is.null(object@train@SpeciesDataList[[1]]@Features)) {
-               if (length(object@train@SpeciesDataList[[1]]@Features@featureNames) > 3) paste(c(object@train@SpeciesDataList[[1]]@Features@featureNames[1:3],'...'),collapse=', ') else paste(object@train@SpeciesDataList[[1]]@Features@featureNames,collapse=', ')
-             } else NA, '\n')
-             cat('type                                      : ' , 
-                 if (all(unlist(lapply(object@train@SpeciesDataList,function(x) {x@Occurrence@presence.only})))) 'presence-only' 
-                 else if (all(!unlist(lapply(object@train@SpeciesDataList,function(x) {x@Occurrence@presence.only})))) 'presence-absence' 
-                 else 'presence-absence AND presence-only', '\n')
-             cat('number of observations (train)            : ', if (length(object@train@species.names) > 6) paste(c(unlist(lapply(object@train@SpeciesDataList,function(x) {length(x@Occurrence@Occurrence)}))[1:6],'...'),collapse=', ')
-                 else paste(unlist(lapply(object@train@SpeciesDataList,function(x) {length(x@Occurrence@Occurrence)})),collapse=', ') ,'\n')
-             cat('has independet test data?                 : ' , if (is.null(object@test)) FALSE 
-                 else if (all(unlist(lapply(object@train@species.names,function(x) {x %in% object@test@species.names})))) TRUE
-                 else paste('Only ',length(object@test@species.names),' species have test data!',sep=''),'\n' )
-             if (!is.null(object@test))
-               cat('number of observations (test)             : ', nrow(object@test@Occurrence@Occurrence),'\n' )
-             cat('has Coordinates?                          : ' , !is.null(object@train@SpeciesDataList[[1]]@coordinates) , '\n')
-           }
-)
-#---------
-setMethod ('show' , 'sdmSettings',
+#-----------
+setMethod ('show' , '.sdmCorSetting',
            function (object) {
              cv.n <- 1
              r.n <- 1
@@ -80,22 +43,22 @@ setMethod ('show' , 'sdmSettings',
              cat('class                                 :' , class(object), '\n')
              cat('========================================================','\n')
              cat('modelling methods                     : ' , paste(object@methods,collapse=', '), '\n')
-             sn <- strsplit(as.character(object@basicSettings@formula[2]),'\\+')[[1]]
+             sn <- object@sdmFormula@species
              cat('species names                         : ' , if (length(sn) > 3) paste(length(sn),'species including:',paste(c(sn,'...'),collapse=', ')) else paste(sn,collapse=', '), '\n')
-             cat('feature names                         : ' , if (length(object@basicSettings@featureNames) > 3) paste(length(object@basicSettings@featureNames),'variables including:',paste(c(object@basicSettings@featureNames[1:3],'...'),collapse=', ')) else paste(object@basicSettings@featureNames,collapse=', '), '\n')
-             cat('feature types                         : ' , paste(.ftype_names(object@basicSettings@feature.types),collapse=', '), '\n')
-             if (!is.null(object@basicSettings@replicates)) {
-               r.n <- length(object@basicSettings@replicates@method)
-               r <- object@basicSettings@replicates@n.replicates
-               cat('replicate.methods (data partitioning) : ' , paste(object@basicSettings@replicates@method,collapse=','), '\n')
-               cat('test percentage                       : ' , object@basicSettings@test.percentage, '\n')
+             cat('feature names                         : ' , if (length(object@sdmFormula@vars) > 3) paste(length(object@sdmFormula@vars),'variables including:',paste(c(object@sdmFormula@vars[1:3],'...'),collapse=', ')) else paste(object@sdmFormula@vars,collapse=', '), '\n')
+             cat('feature types                         : ' , paste(unique(unlist(lapply(object@featuresFrame@feature.types,function(x) x@type))),collapse=', '), '\n')
+             if (!is.null(object@replicate)) {
+               r.n <- length(object@replicate)
+               r <- object@n.replicates
+               cat('replicate.methods (data partitioning) : ' , paste(object@replicate,collapse=','), '\n')
+               if ('subsampleing' %in% object@replicate)
+                 cat('test percentage                       : ' , object@test.percentage, '\n')
                cat('number of replicates (each method)    : ' , r, '\n')
-               if ("cross-validation" %in% object@basicSettings@replicates@method) {
-                 cv.n <- length(unique(object@basicSettings@replicates@fold$'cross-validation'))
-                 cat('n.folds in cross-validation           : ' ,cv.n , '\n')
+               if ("cross-validation" %in% object@replicate) {
+                 cat('n.folds in cross-validation           : ' ,object@cv.folds , '\n')
                }
              }
-             n <- r * (r.n-1+cv.n)
+             n <- r * (r.n-1+object@cv.folds)
              cat('------------------------------------------\n')
              cat('number of runs                        : ' , paste(n,' for each model, ',n*length(object@methods),' in total... (per species)' ,sep=''), '\n')
              
@@ -103,73 +66,101 @@ setMethod ('show' , 'sdmSettings',
 )
 #---------------------
 
-setMethod ('show' , 'sdmModel',
+setMethod ('show' , 'sdmModels',
            function (object) {
-             cv.n <- 1
-             r.n <- 1
-             r <- 1
-             nn <- names(object@data)
+             mi <- object@run.info
+             for (i in c(2,3)) mi[,i] <- as.character(mi[,i])
+             sp <- unique(mi$species)
+             mo <- unique(mi$method)
+             n <- 1
+             
              cat('class                                 :' , class(object), '\n')
              cat('========================================================','\n')
-             cat('number of species                     : ' , length(nn), '\n')
-             cat('number of modelling methods           : ' , length(object@settings@methods), '\n')
-             cat('names of modelling methods            : ' , paste(object@settings@methods,collapse=', '), '\n')
-             if (!is.null(object@settings@basicSettings@replicates)) {
-               r.n <- length(object@settings@basicSettings@replicates@method)
-               r <- object@settings@basicSettings@replicates@n.replicates
-               if ("cross-validation" %in% object@settings@basicSettings@replicates@method) {
-                 cv.n <- length(unique(object@settings@basicSettings@replicates@fold$'cross-validation'))
-                 #cat('n.folds in cross-validation           : ' ,cv.n , '\n')
-               }
-               n <- r * (r.n-1+cv.n)
-               cat('number of simulations per model       : ' , paste(n,'(per species)'), '\n')
-               cat('replicate.methods (data partitioning) : ' , paste(object@settings@basicSettings@replicates@method,collapse=','), '\n')
-               cat('number of replicates (each method)    : ' , r, '\n')
-               cat('test percentage                       : ' , object@settings@basicSettings@test.percentage, '\n')
-               cat('---------------------------------------\n')
-               cat('run success percentage (all species)  :\n')
-               cat('---------------------------------------\n')
-               p2 <- function(x) {
-                 o <- rep(NA,length(nn))
-                 for (i in seq_along(nn)) {
-                   o[i] <- (length(which(object@models@multiModelList[[nn[i]]]@modelList[[x]]@run.success))/n)*100
-                 }
-                 o
-               }
-               for (i in seq_along(object@settings@methods)) {
-                 cat(paste(object@settings@methods[i],paste(rep(' ',8 - length(unlist(strsplit(object@settings@methods[i],'')))),collapse=''),' : ',paste(rep(' ',10),collapse=''),sep='')  , mean(p2(object@settings@methods[i])), '%\n')
-               }
+             cat('number of species                     : ' , length(sp), '\n')
+             cat('number of modelling methods           : ' , length(mo), '\n')
+             cat('names of modelling methods            : ' , paste(mo,collapse=', '), '\n')
+             
+             if (!is.na(mi[1,4])) {
+               r.n <- length(unique(mi$replication))
+               n <- length(object@replicates[[1]])
+               
+               
+               cat('replicate.methods (data partitioning) : ' , paste(unique(mi$replication),collapse=','), '\n')
+               cat('number of replicates (each method)    : ' , object@setting@n.replicates, '\n')
+               cat('toral number of replicates per model  : ' , paste(n,'(per species)'), '\n')
+               if ('subsampling' %in% unique(mi$replication))
+                 cat('test percentage (in subsampling)      : ' , object@setting@test.percentage, '\n')
                
              }
-             if (!is.null(object@models@multiModelList[[1]]@modelList[[1]]@modelObjectList) || !is.null(object@models@multiModelList[[1]]@modelList[[1]]@independent.evaluationList)) {
-               cat('---------------------------------------\n')
-               cat('average performance (all species)     :\n')
-               cat('---------------------------------------\n')
-               p <- function(x,n) {
-                 apply(.getPerformance(object,x,species = n)[[1]],2,function(x) mean(x,na.rm=TRUE))
+             cat('------------------------------------------\n')
+             cat('model run success percentage (per species)  :\n')
+             cat('------------------------------------------\n')
+             
+             p2 <- function(x) {
+               o <- rep(NA,length(sp))
+               for (i in seq_along(sp)) {
+                 w1 <- mi$species == sp[i]
+                 w2 <- mi$method == x
+                 w <- mi$success[w1 & w2]
+                 o[i] <- (length(which(w))/length(w))*100
                }
-               #o <- data.frame(matrix(ncol=4,nrow=length(object@settings@methods)))
-               #colnames(o) <- c('method',)
-               cat(paste('methods',paste(rep(' ',3),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , paste(c('AUC','COR','TSS'),collapse='    |  '), '\n')
-               cat('------------------------------------------\n')
-               for (i in seq_along(object@settings@methods)) {
-                 o <- rep(0,3)
-                 k <- 0
-                 for (j in seq_along(nn)) {
-                   w <- try(p(object@settings@methods[i],nn[j]),silent=TRUE)
-                   if (!inherits(w,'try-error')) {
-                     o <- o + w
-                     k <- k + 1
-                   }
-                 }
-                 if (k > 0) {
-                   o <- o / k
-                   cat(paste(object@settings@methods[i],paste(rep(' ',10 - length(unlist(strsplit(object@settings@methods[i],'')))),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , paste(round(o,3),collapse='  |  '), '\n') 
-                 } else {
-                   cat(paste(object@settings@methods[i],paste(rep(' ',10 - length(unlist(strsplit(object@settings@methods[i],'')))),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , paste(rep('---',3),collapse='  |  '), '\n') 
-                 }
-                 
-               } 
+               o
+             }
+             a <- ''
+             for (i in sp) a <- paste(a,i,paste(rep(' ',15 - length(unlist(strsplit(i,'')))),collapse=''),collapse='')
+             cat(paste('method        ',a,collapse='|'),'\n')
+             cat(paste(rep('-',length(unlist(strsplit(a,'')))+5),collapse=''),'\n')
+             
+             for (i in seq_along(mo)) {
+               cat(paste(mo[i],paste(rep(' ',10 - length(unlist(strsplit(mo[i],'')))),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , paste(p2(mo[i]),collapse='       |     '), '%\n')
+             }
+             wtest <- colnames(mi)[9:7][which(as.matrix(mi[1,c(9,8,7)]))[1]]
+             
+             
+             cat('\n###################################################################\n')
+             if (n > 1) {
+               if (wtest == 'test.dep')
+                 cat('model Mean performance (per species), using test dataset (generated using partitioning):\n')
+               else if (wtest == 'test.indep')
+                 cat('model Mean performance (per species), using independent test dataset:\n')
+               else
+                 cat('model Mean performance (per species), using training test dataset:\n')
+             } else {
+               if (wtest == 'test.dep')
+                 cat('model performance (per species), using test dataset (generated using partitioning):\n')
+               else if (wtest == 'test.indep')
+                 cat('model performance (per species), using independent test dataset:\n')
+               else
+                 cat('model performance (per species), using training test dataset:\n')
+              } 
+               
+             cat('--------------------------------------------------------------------\n')
+             p <- function(x,sp) {
+               a <- c()
+               w1 <- mi$species == sp
+               w2 <- mi$method == x
+               id <- mi$modelID[w1 & w2 & mi$success]
+               o <- ._getPerformance(object,id,wtest = NULL,s1=c('AUC','COR','Deviance'),s2='TSS',opt = 2)
+               a <- mean(sapply(o,function(x) x$AUC),na.rm=TRUE)
+               a <- c(a,mean(sapply(o,function(x) x$COR),na.rm=TRUE))
+               a <- c(a,mean(sapply(o,function(x) x$TSS),na.rm=TRUE))
+               a <- c(a,mean(sapply(o,function(x) x$Deviance),na.rm=TRUE))
+               a <- round(a,2)
+               a <- as.character(a)
+               b <- c()
+               for (i in a) b <- c(b,paste(i,paste(rep(' ',7 - length(unlist(strsplit(i,'')))),collapse=''),collapse=''))
+               paste(b,collapse='|     ')
+             }
+             
+             for (spp in sp) {
+               
+               cat('\n ## species   : ',spp,'\n')
+               cat('======================\n\n')
+               cat(paste('methods',paste(rep(' ',3),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , paste(c('AUC','COR','TSS','Deviance'),collapse='     |     '), '\n')
+               cat('-------------------------------------------------------------------\n')
+               for (i in seq_along(mo)) {
+                 cat(paste(mo[i],paste(rep(' ',10 - length(unlist(strsplit(mo[i],'')))),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , p(mo[i],spp), '\n')
+               }
              }
            }
 )

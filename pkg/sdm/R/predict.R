@@ -1,27 +1,38 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date :  July 2014
-# Version 1.0
+# Date :  Feb. 2014
+# Version 2.0
 # Licence GPL v3
 
+.raster2data.table <- function(r) {
+  if (inherits(r,'RasterBrick'))  {
+    o <- data.table(r@data@values)
+    o$cellnr <- 1:ncell(r)
+  } else if (inherits(r,'RasterLayer')) {
+    o <- data.table(r@data@values)
+    colnames(o) <- names(r)
+    o$cellnr <- 1:ncell(r)
+  } else {
+    o <- data.table(as.data.frame(r))
+    o$cellnr <- 1:ncell(r)
+  }
+  o
+}
+#---------
 
 .getlevels <- function(x) {
   o <- NULL
-  if (inherits(x,'singleSpecies') || inherits(x,'multipleSpecies')) {
-    if (!is.null(x@train@Features@factors)) {
-      o <- vector('list',length(x@train@Features@factors))
-      names(o) <- x@train@Features@factors
-      for (i in seq_along(o)) o[[i]] <- levels(x@train@Features@features[,x@train@Features@factors[i]])
+  if (inherits(x,'sdmdata')) {
+    if (!is.null(x@factors)) {
+      o <- x@factors
+      names(o) <- o
+      o <- lapply(o,function(i) levels(x@features[[i]]))
     }
-  } else if (inherits(x,'sdmModel')) {
-    f <- c()
-    for (i in seq_along(x@settings@basicSettings@feature.types)) {
-      if ('factor' %in% x@settings@basicSettings@feature.types[[i]]) f <- c(f,names(x@settings@basicSettings@feature.types)[i])
-    }
+  } else if (inherits(x,'sdmModels')) {
     
-    if (length(f) > 0) {
-      o <- vector('list',length(f))
-      names(o) <- f
-      for (i in seq_along(o)) o[[i]] <- levels(x@data@train@Features@features[,f[i]])
+    if (!is.null(x@data@factors)) {
+      o <- x@data@factors
+      names(o) <- o
+      o <- lapply(o,function(i) levels(x@data@features[[i]]))
     }
   } else if (inherits(x,'data.frame')) {
     f <- .where(is.factor,x)
@@ -29,18 +40,26 @@
       f <- names(f)[f]
       o <- vector('list',length(f))
       names(o) <- f
-      for (i in seq_along(o)) o[[i]] <- levels(x[,f[i]])
+      for (i in seq_along(o)) o[[i]] <- levels(x[[f[i]]])
     }
   }
   o
 }
 #-------------
 
+.getTotal.object.size <- function() {
+  # only the size of objects in R_GlobalEnv
+  paste(as.character(round(sum(unlist(lapply(ls(all.names = TRUE,envir=parent.frame()),function(x) object.size(get(x)))))/1024/1024/1024,4)),'Gb')
+}
 
+#-----------
 .raster2df <- function(x,level) {
-  d <- data.frame(cellnr=1:ncell(x),x[1:ncell(x)])
-  d <- d[apply(d,1,function(x) all(!is.na(x))),]
-  if (nrow(d) == 0) stop('raster object has no data...!')
+  d <- data.frame(cellnr=1:ncell(x),as.data.frame(x))
+  bb <- rep(TRUE,nrow(d))
+  for (i in 2:ncol(d)) bb <- bb & !is.na(d[,i])
+  if (length(which(bb)) == 0) stop('raster object has no data...!')
+  d <- d[bb,]
+  rm(bb)
   
   if (!missing(level) && !is.null(level)) {
     n <- names(level)
@@ -59,258 +78,400 @@
 }
 #----------------
 
+.generateName <- function(x) {
+  paste(c(x,'_',sample(c(letters,1:9),6,replace=T)),collapse='')
+}
+#-----
+.domClass <- function(v) {
+  # decreasing sort of dominant classes in a character vector
+  v <- as.character(v)
+  u <- unique(v)
+  names(u) <- u
+  u <- unlist(lapply(u,function(x) length(which(v == x))))
+  names(u)[order(u,decreasing = TRUE)]
+}
+#---------
+
 
 if (!isGeneric("predict")) {
   setGeneric("predict", function(object, ...)
     standardGeneric("predict"))
 }	
+# 
+# .predict=function(obj,pred,pred.par,dt=dt) {
+#   pred.par[[1]] <- obj
+#   pred.par[[2]] <- dt
+#   m <- try(pred(pred.par),silent=TRUE)
+#   options(warn=0)
+#   m
+# }
 
 
 
-setMethod('predict', signature(object='sdmModel'), 
-          function(object, newdata, filename="",models,species=1,scenario,mean=FALSE,overwrite=TRUE,...) {
+
+.generateWLP <- function(x,newdata,w=NULL,species=NULL,method=NULL,replication=NULL,run=NULL,ncore=NULL) {
+  
+  mi <- .getModel.info(x,w=w,species=species,method=method,replication=replication,run=run)
+  
+  s <- mi$success
+  
+  if (!all(s)) {
+    if (!any(s)) stop('There is no model objects that were successfully fitted!')
+    if (length(which(!s)) == 1) {
+      warning(paste('1 model from the total',length(s),'models was NOT successfully fitted, so it is excluded in prediction!'))
+    } else {
+      warning(paste(length(which(!s)),'models from the total',length(s),'models were NOT successfully fitted, so they are excluded in prediction!'))
+    }
+    
+    mi <- mi[s,]
+    
+  }
+  mi <- mi[,1:5]
+  #-----------
+  nr <- nrow(mi)
+  if (nr == 0) stop('the specified models do not exist!')
+  species <- as.character(unique(mi[,2]))
+  
+  m <- unique(as.character(mi[,3]))
+  #----
+  w <- new('.workloadP',runTasks=mi)
+  
+  if (is.null(ncore)) w$ncore <- 1L
+  else {
+    w$ncore <- parallel::detectCores()
+    if (ncore < w$ncore) w$ncore <- ncore
+    # temporary until the HPC for windows is implemented:
+    if (.is.windows()) w$ncore <- 1L
+  }
+  
+  w$newdata$raster <- NULL
+  nf <- nFact <- NULL
+  
+  if (inherits(newdata,'data.frame')) {
+    n <- colnames(newdata)
+    if (!all(x@setting@featuresFrame@vars %in% n)) stop('the data does not contain some or all of the variables that the model needs...')
+    w$newdata$data.frame <- newdata
+    w$modelFrame <- .getModelFrame(x@setting@featuresFrame,w$newdata$data.frame,response=species)
+  } else if (inherits(newdata,'Raster')) {
+    n <- names(newdata)
+    if (!all(x@setting@featuresFrame@vars %in% n)) stop('the data does not contain some or all of the variables that the model needs...')
+    w$newdata$raster <- newdata
+    w$newdata$data.frame <- .raster2df(newdata,.getlevels(x))
+    
+    w$modelFrame <- .getModelFrame(x@setting@featuresFrame,w$newdata$data.frame,response=species)
+    
+    #b <- brick(raster(newdata))
+    #mr <- rep(NA,ncell(b))
+    
+  } else stop('newdata should be a Raster* object or a data.frame...!')
+  
+  
+  w$funs <- .sdmMethods$getPredictFunctions(m)
+  w$arguments <- .sdmMethods$getPredictArguments(m)
+  w$dataObject.names <- unique(unlist(lapply(x@setting@methods, .sdmMethods$getDataArgumentNames)))
+  for (mo in m) {
+    wc <- unlist(lapply(w$arguments[[mo]]$params,function(x) is.character(x)))
+    
+    if (any(!wc)) {
+      if (!all(unlist(lapply(w$arguments[[mo]]$params[!wc],function(x) is.function(x))))) stop(paste('parameter definition for the model',m,'in the model container is not correctly defined!'))
+      for (n in names(w$arguments[[mo]]$params[!wc])) {
+        #if (!all(names(formals(w$arguments$predict[[mo]]$params[[n]])) %in% reserved.names)) stop(paste('the input argument for the function generates the parameter for model',m,'is unknown (not in the reseved objects)'))
+        w$params[[n]] <- do.call(w$arguments[[mo]]$params[[n]],w$generateParams(names(formals(w$arguments[[mo]]$params[[n]])),sp))
+        w$arguments$predict[[mo]]$params[[n]] <- n
+      }
+    }
+  }
+  
+  #######
+  nf <- .getFeatureNamesTypes(x@setting@featuresFrame)
+  if ('factor' %in% nf) {
+    nFact <- names(nf)[nf == 'factor']
+    nf <- .excludeVector(names(nf),nFact)
+    id <- mi[,1]
+    dd <- as.data.frame(x@data)
+    ddf <- .getModelFrame(x@setting@featuresFrame,dd,response=species)
+    dd <- dd$rID
+    for (sp in species) {
+      mj <- mi[which(mi[,2] == sp),]
+      r <- mj[,5]
+      
+      if (!is.null(ddf$specis_specific)) {
+        d1 <- cbind(ddf$features,ddf$specis_specific[[sp]])
+        d2 <- cbind(w$modelFrame$features,w$modelFrame$specis_specific[[sp]])
+        nf1 <- colnames(w$modelFrame$features)
+        nf2 <- colnames(w$modelFrame$specis_specific[[sp]])
+      } else {
+        d1 <- ddf$features
+        d2 <- w$modelFrame$features
+        nf1 <- colnames(w$modelFrame$features)
+        nf2 <- NULL
+      }
+      
+      if (!all(is.na(r))) {
+        r <- unique(r)
+        o <- data.frame(matrix(ncol=3,nrow=0))
+        for (j in r) {
+          ddd <- .factorFixW(d1[dd %in% .getRecordID(x@recordIDs,x@replicates[[sp]][[j]]$train,sp=sp,train=TRUE),],d2,nf = nf,nFact=nFact)
+          
+          if (length(ddd) > 0) {
+            for (i in seq_along(ddd)) {
+              o <- rbind(o,data.frame(f=ddd[[i]][[1]],old=ddd[[i]][[2]],new=ddd[[i]][[3]]))
+            }
+          }
+        }
+        
+        if (nrow(o) > 0) {
+          for (n in as.character(unique(o[,1]))) {
+            wn <- which(o$f == n)
+            oc <- o[wn,]
+            u <- as.character(unique(oc[,2]))
+            un <- as.character(unique(o[wn,3]))
+            for (uu in u) {
+              wc <- which(oc$old == uu)
+              nc <- .domClass(as.character(oc$new[wc]))
+              if (nc[1] %in% u && length(nc) > 1) nc <- nc[2]
+              else nc <- nc[1]
+              ww <- which(w$modelFrame$features[,n] == uu)
+              w$modelFrame$features[ww,n] <- nc
+            }
+            w$modelFrame$features[,n] <- factor(w$modelFrame$features[,n])
+          }
+        }
+      }
+    }
+  }
+  #--------
+  w$obj <- x@models
+  w$runTasks$species <- as.character(w$runTasks$species)
+  w$runTasks$method <- as.character(w$runTasks$method)
+  sp <- as.character(mi[,2])
+  nw <- names(x@models)
+  w$runTasks$speciesID <- unlist(lapply(sp,function(x) {which(nw == x)}))
+  
+  m <- as.character(mi[,3])
+  nw <- names(x@models[[1]])
+  w$runTasks$methodID <- unlist(lapply(m,function(x) {which(nw == x)}))
+  w$runTasks$mIDChar <- as.character(mi[,1])
+  w
+}
+
+
+setMethod('predict', signature(object='sdmModels'), 
+          function(object, newdata, filename="",w=NULL,species=NULL,method=NULL,replication=NULL,run=NULL,mean=FALSE,control=NULL,overwrite=FALSE,nc=1L,obj.size=1,err=FALSE,...) {
             if (missing(newdata)) stop('mewdata is missing...')
             
-            if (!missing(models)) {
-              models <- unique(.methodFix(models))
-              w <- .isMethodAvailable(models)
-              if (!any(w)) stop('the specified models are not recognized...')
-              if (!all(w)) {
-                warning(paste(paste(models[!w], collapse=', '), 'are not recognized...'))
-                models <- models[w]
-              }
-              w <- models %in% object@settings@methods
-              if (!any(w)) stop('the specified models do not exist in the sdm object...')
-              if (!all(w)) {
-                warning(paste('models ',paste(models[!w], collapse=', '), ', are ignored, because they do not exist in the sdm object...',sep=''))
-                models <- models[w]
-              }
-            } else models <- object@settings@methods
+            #a <- c('species','method','replication','run','w','mean','control','owerwrite')
+            #dot <- list(...)
+            #ndot <- names(dot)
+            b <- NULL
+            w <- .generateWLP(x = object,newdata=newdata,w=w,species=species,method=method,replication=replication,run=run,ncore=nc)
+            #w <- sdm:::.generateWLP(x = object,newdata=newdata,w=NULL,species=NULL,method=NULL,replication=NULL,run=NULL,ncore=1)
             
-            names(models) <- models
-            
-            lib <- unlist(lapply(models,.loadLib))
-            #----
-            if (is.character(species)) {
-              w <- species %in% object@models@species.names
-              if (!any(w)) stop('specified species names do not exist in the model object')
-              if (!all(w)) {
-                species <- species[w]
-                warning(paste('species ',paste(species[!w], collapse=', '), ', are ignored, because they do not exist in the sdm object...',sep=''))
-              }
-            } else if (is.numeric(species)) {
-              w <- species %in% seq_along(object@models@multiModelList)
-              if (!any(w)) stop('specified species number do not exist in the model object')
-              if (!all(w)) {
-                species <- species[w]
-                warning(paste('species ',paste(species[!w], collapse=', '), ', are ignored, because they do not exist in the sdm object...',sep=''))
-              }
-              species <- object@models@species.names[w]
-            } else stop('species should be character(name of species) or numeric (species number)')
-            
-            #----
-            sc <- object@models@multiModelList[[1]]@modelList[[1]]@scenarios
-            nr <- nrow(sc)
-            sc <- .showScenarios(sc)
-            
-            if (missing(scenario)) scenario <- 1:nrow(sc)
-            else if (is.character(scenario)) {
-              scenario <- sort(.scenarioMatch(scenario,as.character(sc[,1])))
-            } else if (is.numeric(scenario)) {
-              w <- which(scenario %in% 1:nrow(sc))
-              if (length(w) > 0) scenario <- scenario[w]
-              else stop('specified scenario(s) is not found in the model')
-            } else stop('scenario should be character (name) or numeric')
-            
-            sn <- as.character(sc[scenario,1])
-            sn <- ifelse(sn == 'cross-validation','cv',sn)
-            
-            nr <- nr * length (models) * length(species)
-            #----------
-            
-            
-            b <- nf <- nFact <- NULL
-            
-            if (inherits(newdata,'data.frame')) {
-              n <- colnames(newdata)
-              if (!all(object@settings@basicSettings@featureNames %in% n)) stop('the data does not contain some or all of the variables that the model needs...')
-              d <- data.frame(.model.frame(newdata,object@settings@basicSettings@feature.types))
-              rm(newdata)
-              
-            } else if (inherits(newdata,'Raster')) {
+            if (!is.null(w$newdata$raster)) {
               if (filename == '') filename <- .generateName('sdm_prediction')
               if (extension(filename) == '') filename <- paste(filename,'.grd',sep='')
-              n <- names(newdata)
-              if (!all(object@settings@basicSettings@featureNames %in% n)) stop('the data does not contain some or all of the variables that the model needs...')
-              d <- .raster2df(newdata,.getlevels(object))
-              cellnr <- d$cellnr
-              d <- data.frame(.model.frame(d,object@settings@basicSettings@feature.types))
-              b <- brick(raster(newdata))
+              b <- brick(raster(w$newdata$raster))
               mr <- rep(NA,ncell(b))
-              rm(newdata)
-            } else stop('newdata should be Raster* or data.frame...!')
-            
-            if ('factor' %in% .ftype_names(object@settings@basicSettings@feature.types)) {
-              nf <- c()
-              for (f in object@settings@basicSettings@featureNames) {
-                if ('linear' %in% object@settings@basicSettings@feature.types[[f]]) nf <- c(nf,f)
-              }
-              nFact <- .where(is.factor,d)
-              nFact <- names(nFact[nFact])
-              dM <- data.frame(.model.frame(.species2df(object@data),object@settings@basicSettings@feature.types))
             }
             
+            mid <- w$runTasks$modelID
+            #----
+            nr <- nrow(w$runTasks)
+            
+            obj.size <- obj.size * 1073741824 # Gb to byte
             #--------------
+            success <- rep(TRUE,nr)
+            rnames <- fullnames <- c()
+            errLog <- list()
+            
             options(warn=-1)
             
-            funsP <- lapply(models,function(x) get(paste('.',x,'Predict',sep='')))
-            
-            metadata <- data.frame(id=1:nr,species=rep(NA,nr),scenario=rep(NA,nr),model=rep(NA,nr),success=rep(FALSE,nr))
-            rnames <- fullnames <- c()
             if (inherits(b,'Raster')) {
               if (nr > 1) {
                 b <- brick(b,nl=nr)
                 writeRaster(b,filename=filename,overwrite=overwrite)
                 b <- brick(filename)
-              }
-              else {
+              } else {
                 b <- raster(b)
                 writeRaster(b,filename=filename,overwrite=overwrite)
                 b <- raster(filename)
               }
               
             } else {
-              mtx <- matrix(NA,nrow=nrow(d),ncol=0)
+              mtx <- matrix(NA,nrow=nrow(w$newdata$data.frame),ncol=0)
             }
-            
-            
+            #-------
+            memreq <- (object.size(w$newdata$data.frame)[[1]] / ncol(w$newdata$data.frame))*nr
             co <- 1
             
-            for (i in seq_along(species)) {
-              for (j in seq_along(scenario)) {
-                runs <- sc[j,2]:sc[j,3]
-                
-                options(warn=-1)
-                for (r in seq_along(runs)) {
-                  mL <- lapply(models,function(x) object@models@multiModelList[[species[i]]]@modelList[[x]]@modelObjectList[[runs[r]]])
-                  
-                  if (!is.null(nFact)) {
-                    if (sn[j] != 'full') {
-                      run.ID <- .getRunIndex(object@settings@basicSettings@replicates,object@models@multiModelList[[i]]@modelList[[1]]@scenarios[runs[r],])
-                      d2 <- .factorFix(dM[as.character(run.ID),],d,nFact,nf)
-                      d2 <- .eqFactLevel(dM[as.character(run.ID),],d2)
+            if (memreq <= obj.size) {
+              o <- parallel::mclapply(w$runTasks$modelID,function(i,...) w$predictID(i),mc.cores = w$ncore,w=w)
+              if (inherits(b,'Raster')) {
+                if (length(o) > 1) {
+                  for (j in seq_along(o)) {
+                    if (!inherits(o[[j]],'try-error')) {
+                      mr[w$newdata$data.frame$cellnr] <- o[[j]]
+                      b <- update(b,mr,cell=1,band=co)
+                      co <- co+1
+                      rnames <- c(rnames,paste('id_',w$runTasks$modelID[j],'-sp_',w$runTasks$speciesID[j],'-m_',w$runTasks$method[j],if (!is.na(w$runTasks$replication[j])) paste('-re_',paste(strsplit(w$runTasks$replication[j],'')[[1]][1:4],collapse=''),sep=''),sep=''))
+                      fullnames <- c(fullnames,paste('id_',w$runTasks$modelID[j],'-species_',w$runTasks$species[j],'-method_',w$runTasks$method[j],if (!is.na(w$runTasks$replication[j])) paste('-replication_',w$runTasks$replication[j],sep=''),sep=''))
                     } else {
-                      d2 <- .factorFix(dM,d,nFact,nf)
-                      d2 <- .eqFactLevel(dM,d2)
+                      success[j] <- FALSE
+                      errLog <- c(errLog,o[[j]])
                     }
-                    m2 <- lapply(funsP,function(f,...) try(f(d2,...),silent=TRUE),s=object@settings@modelSettings,models=mL)
-                    rm(d2)
-                  } else m2 <- lapply(funsP,function(f,...) try(f(d,...),silent=TRUE),s=object@settings@modelSettings,models=mL)
-                  #-----
-                  for (m in seq_along(models)) {
-                    metadata[co,2] <- species[i]
-                    metadata[co,3] <- sn[j]
-                    metadata[co,4] <- models[m]
-                    if (!inherits(m2[[m]],'try-error')) {
-                      metadata[co,5] <- TRUE
-                      if (inherits(b,'RasterBrick')) {
-                        mr[cellnr] <- m2[[m]]
-                        b <- update(b,mr,cell=1,band=co)
-                        rnames <- c(rnames,paste(models[m],'_sp',i,'sc',j,'r',r,sep=''))
-                        fullnames <- c(fullnames,paste(models[m],'_',species[i],'_',sn[j],'_run',r,sep=''))
-                      } else if (inherits(b,'RasterLayer')) {
-                        mr[cellnr] <- m2[[m]]
-                        b <- update(b,mr,cell=1)
-                        rnames <- models[m]
-                        fullnames <- models[m]
-                      } else {
-                        mtx <- cbind(mtx,m2[[m]])
-                        rnames <- c(rnames,paste(models[m],'_sp',i,'sc',j,'r',r,sep=''))
-                      }
-                    }
-                    co <- co + 1
                   }
-                  #-----
+                } else {
+                  if (!inherits(o[[1]],'try-error')) {
+                    mr[w$newdata$data.frame$cellnr] <- o[[1]]
+                    b <- update(b,mr,cell=1)
+                    rnames <- paste('id_',w$runTasks$modelID[1],'-sp_',w$runTasks$speciesID[1],'-m_',w$runTasks$method[1],sep='')
+                    fullnames <- paste('id_',w$runTasks$modelID[1],'-species_',w$runTasks$species[1],'-method_',w$runTasks$method[1],if (!is.na(w$runTasks$replication[1])) paste('-replication_',w$runTasks$replication[1],sep=''),sep='')
+                  } else {
+                    success[1] <- FALSE
+                    errLog <- c(errLog,o[[1]])
+                  }
+                }
+              } else {
+                for (j in seq_along(o)) {
+                  if (!inherits(o[[j]],'try-error')) {
+                    mtx <- cbind(mtx,o[[j]])
+                    co <- co+1
+                    rnames <- c(rnames,paste('id_',w$runTasks$modelID[j],'-sp_',w$runTasks$speciesID[j],'-m_',w$runTasks$method[j],if (!is.na(w$runTasks$replication[j])) paste('-re_',paste(strsplit(w$runTasks$replication[j],'')[[1]][1:4],collapse=''),sep=''),sep=''))
+                  } else {
+                    success[j] <- FALSE
+                    errLog <- c(errLog,o[[j]])
+                  }
+                } 
+              }
+            } else {
+              memdiv <- ceiling(obj.size / (memreq /  nr))
+              ii <- ceiling(nr/memdiv)
+              for (i in 1:ii) {
+                id <- (i-1) * memdiv + c(1:memdiv)
+                id <- id[id %in% 1:nr]
+                o <- parallel::mclapply(w$runTasks$modelID[id],function(i,...) w$predictID(i),mc.cores = w$ncore,w=w)
+                
+                if (inherits(b,'RasterBrick')) {
+                  for (j in seq_along(o)) {
+                    if (!inherits(o[[j]],'try-error')) {
+                      mr[w$newdata$data.frame$cellnr] <- o[[j]]
+                      b <- update(b,mr,cell=1,band=co)
+                      co <- co+1
+                      rnames <- c(rnames,paste('id_',w$runTasks$modelID[id[j]],'-sp_',w$runTasks$speciesID[id[j]],'-m_',w$runTasks$method[id[j]],if (!is.na(w$runTasks$replication[id[j]])) paste('-re_',paste(strsplit(w$runTasks$replication[id[j]],'')[[1]][1:4],collapse=''),sep=''),sep=''))
+                      fullnames <- c(fullnames,paste('id_',w$runTasks$modelID[id[j]],'-species_',w$runTasks$species[id[j]],'-method_',w$runTasks$method[id[j]],if (!is.na(w$runTasks$replication[id[j]])) paste('-replication_',w$runTasks$replication[id[j]],sep=''),sep=''))
+                    } else {
+                      success[id[j]] <- FALSE
+                      errLog <- c(errLog,o[[id[j]]])
+                    }
+                  }
+                } else if (inherits(b,'RasterLayer')) {
+                  if (!inherits(o[[1]],'try-error')) {
+                    mr[w$newdata$data.frame$cellnr] <- o[[1]]
+                    b <- update(b,mr,cell=1)
+                    rnames <- paste('id_',w$runTasks$modelID[1],'-sp_',w$runTasks$speciesID[1],'-m_',w$runTasks$method[1],sep='')
+                    fullnames <- paste('id_',w$runTasks$modelID[1],'-species_',w$runTasks$species[1],'-method_',w$runTasks$method[1],if (!is.na(w$runTasks$replication[1])) paste('-replication_',w$runTasks$replication[1],sep=''),sep='')
+                  } else {
+                    success[1] <- FALSE
+                    errLog <- c(errLog,o[[1]])
+                  }
+                } else {
+                  for (j in seq_along(o)) {
+                    if (!inherits(o[[j]],'try-error')) {
+                      mtx <- cbind(mtx,o[[j]])
+                      co <- co+1
+                      rnames <- c(rnames,paste('id_',w$runTasks$modelID[id[j]],'-sp_',w$runTasks$speciesID[id[j]],'-m_',w$runTasks$method[id[j]],if (!is.na(w$runTasks$replication[id[j]])) paste('-re_',paste(strsplit(w$runTasks$replication[id[j]],'')[[1]][1:4],collapse=''),sep=''),sep=''))
+                    } else {
+                      success[id[j]] <- FALSE
+                      errLog <- c(errLog,o[[id[j]]])
+                    }
+                  }
                 }
               }
             }
+            #------------
             options(warn=0)
-            if (!all(metadata[,5])) {
-              if (!any(metadata[,5])) {
-                if (inherits(b,'Raster')) {
-                  rm(b)
-                  unlink(filename)
-                  stop('Error in prediction....!')
-                } else {
-                  rm(mtx)
-                  stop('Error in prediction....!')
-                }
+            if (!any(success)) {
+              if (inherits(b,'Raster')) {
+                rm(b)
+                unlink(filename)
+                stop('Error in prediction....!')
               } else {
-                if (inherits(b,'Raster')) {
-                  i <- (nlayers(b) - length(!metadata[,5])):nlayers(b)
-                  b <- dropLayer(b,i)
-                }
+                rm(mtx)
+                stop('Error in prediction....!')
               }
             }
             
-            if (length(runs) > 1 && mean) {
+            if (!all(success)) {
+              warning(paste(length(which(!success)),' models (out of ',length(success),') failed in the prediction!',sep=''))
+              b <- b[[1:length(which(success))]]
+              mid <- mid[success]
+              w$runTasks <-  w$runTasks[success,]
+            }
+            
+            #----------
+            
+            
+            if (nr > 1 & mean & !is.na(w$runTasks$replication[1])) {
+              species <- unique(as.character(w$runTasks$species))
+              m <- unique(as.character(w$runTasks$method))
+              
               if (inherits(b,'Raster')) {
                 rnames <- c()
                 newfullnames <- c()
                 newr <- raster(b)
-                for (i in seq_along(species)) {
-                  for (j in seq_along(sn)) {
-                    for (m in seq_along(models)) {
-                      rnames <- c(rnames,paste(models[m],'_sp',i,'sc',j,sep=''))
-                      newfullnames <- c(newfullnames,paste(models[m],'_',species[i],'_',sn[j],sep=''))
-                      w <- which(unlist(lapply(strsplit(fullnames,'_'),function(x) {x[1] == models[m] & x[2] == species[i] & x[3] == sn[j]})))
+                
+                for (sp in species) {
+                  m1 <- w$runTasks[which(w$runTasks$species == sp),]
+                  for (mo in m) {
+                    m2 <- m1[which(m1$method == mo),]
+                    re <- unique(as.character(m2$replication))
+                    for (r in re) {
+                      m3 <- m2[which(m2$replication == r),]
+                      w <- which(mid %in% m3$modelID)
+                      
                       if (length(w) > 1) {
                         temp <- calc(b[[w]],function(x) mean(x,na.rm=TRUE))
                         newr <- addLayer(newr,temp)
                       } else newr <- addLayer(newr,b[[w]])
+                      rnames <- c(rnames,paste('sp_',m3$speciesID[1],'-m_',mo,paste('-re_',paste(strsplit(r,'')[[1]][1:4],collapse=''),sep=''),sep=''))
+                      newfullnames <- c(newfullnames,paste('species_',sp,'-method_',mo,paste('-replication (Mean)_',m3$replication[1],sep=''),sep=''))
                     }
                   }
                 }
-                
                 rm(b)
-                unlink(filename)
+                #unlink(filename)
                 b <- brick(newr,filename=filename,values=TRUE,overwrite=TRUE) 
                 fullnames <- newfullnames
                 rm(newr,newfullnames)
               } else {
-                newmtx <- matrix(NA,nrow=nrow(d),ncol=0)
-                newrnames <- c()
-                .splt <- function(x) {
-                  s1 <- strsplit(x,'_')[[1]]
-                  m <- s1[1]
-                  s2 <- strsplit(strsplit(s1[2],'sp')[[1]][2],'sc')[[1]]
-                  sp <- s2[1]
-                  s3 <- strsplit(s2[2],'r')[[1]]
-                  sc <- s3[1]
-                  r <- s3[2]
-                  c(m,sp,sc,r)
-                }
-                for (i in seq_along(species)) {
-                  for (j in seq_along(sn)) {
-                    for (m in seq_along(models)) {
-                      newrnames <- c(newrnames,paste(models[m],'_sp',i,'sc',j,sep=''))
-                      w <- unlist(lapply(rnames,function(x) {
-                        s <- .splt(x)
-                        s[1] == models[m] & s[2] == i & s[3] == j
-                      }))
+                newmtx <- matrix(NA,nrow=nrow(w$newdata$data.frame),ncol=0)
+                rnames <- c()
+                fullnames <- c()
+                for (sp in species) {
+                  m1 <- w$runTasks[which(w$runTasks$species == sp),]
+                  for (mo in m) {
+                    m2 <- m1[which(m1$method == mo),]
+                    re <- unique(as.character(m2$replication))
+                    for (r in re) {
+                      m3 <- m2[which(m2$replication == r),]
+                      w <- which(mid %in% m3$modelID)
+                      
                       if (length(w) > 1) {
                         temp <- apply(mtx[,w],1,function(x) mean(x,na.rm=TRUE))
                         newmtx <- cbind(newmtx,temp)
                       } else newmtx <- cbind(newmtx,mtx[,w])
+                      rnames <- c(rnames,paste('sp_',m3$speciesID[1],'-m_',mo,paste('-re_',paste(strsplit(r,'')[[1]][1:4],collapse=''),sep=''),sep=''))
+                      #fullnames <- c(fullnames,paste('species_',sp,'-method_',mo,paste('-replication (Mean)_',m3$replication[1],sep=''),sep=''))
                     }
                   }
                 }
-                rnames <- newrnames
                 mtx <- newmtx
               }
-              
             }
-            
+            #------------
+            if (err && length(errLog) > 0) {
+              for (i in seq_along(errLog)) cat(errLog[[i]],'\n')
+            }
             
             if (!inherits(b,'Raster')) {
               colnames(mtx) <- rnames

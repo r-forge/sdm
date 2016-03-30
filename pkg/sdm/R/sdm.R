@@ -1,888 +1,76 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date :  July 2014
-# Version 1.0
+# Date :  Feb. 2015
+# Version 2.0
 # Licence GPL v3
-
-.isMethodAvailable <- function(x) {
-  m <- c('glm','brt','rf')
-  x %in% m
-}
+#--------
 
 
-.getParams <- function(x,name) {
-  params <- list()
-  g <- x[[name]]
-  n <- slotNames(g)[-1]
-  n <- n[-length(n)]
-  for (i in 1:(length(n) - 1)) params[[n[i]]] <- slot(g,n[i])
-  params <- c(params,slot(g,n[length(n)]))
-  params
-}
-#------------
-
-
-.getPredictParams <- function(x,name) {
-  g <- x[[name]]
-  slot(g,'predictSettings')
-}
-
-
-
-.paramFix <- function(x) {
-  for (i in seq_along(x)) {
-    if (any(!is.na(pmatch(c("interact"),x[i])))) x[i] <- 'interaction.depth'
-    else if (any(!is.na(pmatch(c("replicates.m"),x[i])))) x[i] <- 'replicate.method'
-    else if (any(!is.na(pmatch(c("replicate.m"),x[i])))) x[i] <- 'replicate.method'
-    else if (any(!is.na(pmatch(c("cv"),x[i])))) x[i] <- 'cv.fold'
-    else if (any(!is.na(pmatch(c("form"),x[i])))) x[i] <- 'formula'
-    else if (any(!is.na(pmatch(c("meth"),x[i])))) x[i] <- 'methods'
-    else if (any(!is.na(pmatch(c("test.p"),x[i])))) x[i] <- 'test.percent'
-    else if (any(!is.na(pmatch(c("pseudo.m"),x[i])))) x[i] <- 'pseudo.method'
-    else if (any(!is.na(pmatch(c("pseudo.n"),x[i])))) x[i] <- 'pseudo.n'
-    else if (any(!is.na(pmatch(c("var.i"),x[i])))) x[i] <- 'var.importance'
-    else if (any(!is.na(pmatch(c("var.s"),x[i])))) x[i] <- 'var.selection'
-    else if (any(!is.na(pmatch(c("varI"),x[i])))) x[i] <- 'var.importance'
-    else if (any(!is.na(pmatch(c("variable.i"),x[i])))) x[i] <- 'var.importance'
-    else if (any(!is.na(pmatch(c("variable.s"),x[i])))) x[i] <- 'var.selection'
-    else if (any(!is.na(pmatch(c("varS"),x[i])))) x[i] <- 'var.selection'
-    else if (any(!is.na(pmatch(c("sdm"),x[i])))) x[i] <- 'sdmSetting'
-    else if (any(!is.na(pmatch(c("predict"),x[i])))) x[i] <- 'predict'
-  }
-  x
-}
-
-#---------
-
-
-##################################
-#------- FIT functions ------
-.glmFit <- function(data,...) {
-  s <- list(...)[['s']]
-  p <- .getParams(s,'glm')
-  p <- c(formula=.getFormula(colnames(data)),data=quote(data),p)
-  m <- do.call(glm,p)
-  m
-}
-#----------
-.brtFit <- function(data,...) {
-  s <- list(...)[['s']]
-  p <- .getParams(s,'brt')
-  p <- c(formula=.getFormula(colnames(data)),data=quote(data),p)
-  m <- do.call(gbm,p)
-  m
-}
-#-----
-.rfFit <- function(data,...) {
-  s <- list(...)[['s']]
-  p <- .getParams(s,'rf')
-  p <- c(formula=.getFormula(colnames(data)),data=quote(data),p)
-  m <- do.call(randomForest,p)
-  m
-}
-#-----
-
-.svmFit <- function(data,...) {
-  s <- list(...)[['s']]
-  p <- .getParams(s,'svm')
-  p <- c(x=.getFormula(colnames(data)),data=quote(data),p)
-  m <- do.call(ksvm,p)
-  m
-}
-
-
-.gamFit <- function(data,...) {
-  s <- list(...)[['s']]
-  p <- .getParams(s,'gam')
-  f <- .where(is.factor,data)
-  p <- c(list(formula=.getGamFormula(colnames(data),f),data=quote(data)),p)
-  m <- do.call(gam,p)
-  m
-}
-
-
-
-
-#######################
-#------------ PREDICT FUNCTIONS
-.glmPredict <- function(newdata,...) {
-  s <- list(...)[['s']]
-  m <- list(...)[['models']]$glm
-  if (!inherits(m,'try-error')) {
-    p <- .getPredictParams(s,'glm')
-    p[['object']] <- quote(m)
-    p <- c(newdata=quote(newdata),p)
-    m <- do.call(predict.glm,p)
-  } else m <- NA
-  m
-}
-#----------
-.brtPredict <- function(newdata,...) {
-  s <- list(...)[['s']]
-  m <- list(...)[['models']]$brt
-  if (!inherits(m,'try-error')) {
-    p <- .getPredictParams(s,'brt')
-    p[['object']] <- quote(m)
-    p <- c(newdata=quote(newdata),p)
-    m <- do.call(predict.gbm,p)
-  } else m <- NA
-  m
-}
-#---------
-
-.rfPredict <- function(newdata,...) {
-  s <- list(...)[['s']]
-  m <- list(...)[['models']]$rf
-  if (!inherits(m,'try-error')) {
-    p <- .getPredictParams(s,'rf')
-    p[['object']] <- quote(m)
-    p <- c(newdata=quote(newdata),p)
-    m <- do.call(predict,p)
-  } else m <- NA
-  m
-}
-#--------------
-
-.gamPredict <- function(newdata,...) {
-  s <- list(...)[['s']]
-  m <- list(...)[['models']]$gam
-  if (!inherits(m,'try-error')) {
-    p <- .getPredictParams(s,'gam')
-    p[['object']] <- quote(m)
-    p <- c(newdata=quote(newdata),p)
-    m <- do.call(predict,p)
-  } else m <- NA
-  m
-}
-
-#------
-
-.svmPredict <- function(newdata,...) {
-  s <- list(...)[['s']]
-  m <- list(...)[['models']]$svm
-  if (!inherits(m,'try-error')) {
-    p <- .getPredictParams(s,'svm')
-    p[['object']] <- quote(m)
-    p <- c(newdata=quote(newdata),p)
-    m <- do.call(predict,p)
-  } else m <- NA
-  m
-}
-
-#######################
-#-----
-.loadLib <- function(method) {
-  switch(method,
-         brt=require(gbm, quietly = TRUE),
-         rf=require(randomForest, quietly = TRUE),
-         glm=TRUE,
-         gam=require(mgcv,quietly = TRUE),
-         svm=require(kernlab,quietly = TRUE)
-  )
-}
-#-----
-
-.genFormula <- function(x,y) {
-  n <- names(x)
-  fo <- c()
+.methodFix <- function(n) {
   for (i in seq_along(n)) {
-    f <- x[[i]]
-    for (j in seq_along(f)) {
-      if (f[j] == 'linear') {
-        fo <- c(fo,n[i])
-      } else if (f[j] == 'quadratic') {
-        fo <- c(fo,paste('quadratic(',n[i],')',sep=''))
-      } else if (f[j] == 'cubic') {
-        fo <- c(fo,paste('cubic(',n[i],')',sep=''))
-      } else if (any(!is.na(pmatch(c("power@"),f[j])))) {
-        s <- strsplit(f[j],'@')[[1]][2:3]
-        fo <- c(fo,paste('I(',n[i],'^',s[2],')',sep=''))
-      } else if (f[j] == 'factor') {
-        fo <- c(fo,paste('factor(',n[i],')',sep=''))
-      } else if (any(!is.na(pmatch(c("interaction@"),f[j])))) {
-        s <- strsplit(f[j],'@')[[1]][-1]
-        fo <- c(fo,paste(s,collapse=':'))
-      }
-    }
+    nx <- .sdmMethods$whichMethod(n[i])
+    if (!is.null(nx)) n[i] <- nx
+    else n[i] <- NA
   }
-  as.formula(paste(y,'~',paste(fo,collapse='+'),sep=''))
+  n
 }
-
-#----
-.getFormula <- function(n) {
-  as.formula(paste(n[1],'~',paste(n[-1],collapse='+'),sep=''))
-}
-#----
-
-.getGamFormula <- function(n,f) {
-  if (any(f)) {
-    nf <- names(which(f))
-    n <- n[-which(n %in% nf)]
-    as.formula(paste(n[1],'~',paste(c(paste(paste('s(',n[-1],sep=''),')',sep=''),nf),collapse='+'),sep=''))
-  } else as.formula(paste(n[1],'~',paste(paste(paste('s(',n[-1],sep=''),')',sep=''),collapse='+'),sep=''))
-}
-#----
-.where <- function(f, x) {
-  vapply(x, f, logical(1))
-}
-#------
-
-.dummy <- function(x,n) {
-  out <- data.frame(matrix(nrow=length(x),ncol=0)) 
-  for (level in unique(x)) out[paste(n,'_',level,sep='')] <- ifelse(x == level, 1, 0)
-  out
-}
-#-----
-.model.frame <- function(data,setting) {
-  d <- data.frame(matrix(nrow=nrow(data),ncol=0))
-  n <- names(setting)
-  fac <- .where(is.factor,head(data[,n]))
-  cn <- c()
+#----------
+.replicate.methodFix <- function(n) {
   for (i in seq_along(n)) {
-    f <- setting[[i]]
-    for (j in seq_along(f)) {
-      if (f[j] == 'linear') {
-        d <- cbind(d,data[,n[i]])
-        cn <- c(cn,n[i])
-      } else if (f[j] == 'quadratic') {
-        d <- cbind(d,data[,n[i]]^2)
-        cn <- c(cn,paste('quadratic_',n[i],sep=''))
-      } else if (any(!is.na(pmatch(c("interaction@"),f[j])))) {
-        s <- strsplit(f[j],'@')[[1]][-1]
-        wF <- .where(is.factor,head(data[,s]))
-        if (!any(wF)) {
-          w <- 1
-          for (ii in seq_along(s)) w <- w * data[,s[ii]]
-          d <- cbind(d,w)
-          cn <- c(cn,f[j])
-          rm(w)
-        } else {
-          dd <- data[,s]
-          nn <- list()
-          for (ii in seq_along(s)) {
-            if (wF[ii]) {
-              dF <- .dummy(dd[,s[ii]],s[ii])
-              dd <- data.frame(dd,dF)
-              nn[[ii]] <- colnames(dF)
-            } else nn[[ii]] <- s[ii]
-          }
-          
-          dF <- nn[[1]]
-          for (ii in 2:length(nn)) dF <- outer(dF, nn[[ii]], paste) 
-          dF <- lapply(as.vector(dF),function(x) {strsplit(x,' ')[[1]]})
-          for (ii in seq_along(dF)) {
-            w <- 1
-            for (jj in seq_along(dF[[ii]])) {
-              w <- w * dd[,dF[[ii]][jj]]
-            }
-            fJ <- paste('interaction@',paste(dF[[ii]],collapse='@'),sep='')
-            d <- cbind(d,w)
-            cn <- c(cn,fJ)
-          }
-        }
-        
-      } else if (any(!is.na(pmatch(c("power@"),f[j])))) {
-        s <- strsplit(f[j],'@')[[1]][2:3]
-        d <- cbind(d,data[,s[1]]^as.numeric(s[2]))
-        cn <- c(cn,f[j])
-      } else if (f[j] == 'factor') {
-        d <- cbind(d,factor(data[,n[i]]))
-        cn <- c(cn,paste('factor_',n[i],sep=''))
-      }
-    }
+    nx <- .replicateMethods$whichMethod(n[i])
+    if (!is.null(nx)) n[i] <- nx
+    else n[i] <- NA
   }
-  colnames(d) <- cn
-  d
+  n
+}
+#----------
+.getSpeciesDistribution <- function(data) {
+  o <- lapply(data@species,function(x) {
+    if (!is.null(x@presence)) return('binomial')
+    else if (!is.null(x@abundance)) return('poisson')
+    else if (!is.null(x@Multinomial)) return('multinomial')
+    else return(NA)
+  })
+  n <- names(o)
+  o <- as.character(o)
+  names(o) <- n
+  o
+}
+#-------------
+
+.getFormula.rhs <- function(n,env=parent.frame()) {
+  as.formula(paste('~',paste(n,collapse='+'),sep=''),env = env)
 }
 
-
-#---------
-.simpleFormula <- function(x) {
-  formula(paste('~',paste(x,collapse='+'),sep=''))
+.getFormula <- function(n,env=parent.frame()) {
+  as.formula(paste(n[1],'~',paste(n[-1],collapse='+'),sep=''),env = env)
 }
-#---------
-.methodFix <- function(x) {
-  x <- tolower(x)
-  for (i in seq_along(x)) {
-    if (any(!is.na(pmatch(c("brt"),x[i])))) x[i] <- 'brt'
-    else if (any(!is.na(pmatch(c("boo"),x[i])))) x[i] <- 'brt'
-    else if (any(!is.na(pmatch(c("gbm"),x[i])))) x[i] <- 'brt'
-    else if (any(!is.na(pmatch(c("ran"),x[i])))) x[i] <- 'rf'
-    else if (any(!is.na(pmatch(c("rf"),x[i])))) x[i] <- 'rf'
-    else if (any(!is.na(pmatch(c("forest"),x[i])))) x[i] <- 'rf'
-    else if (any(!is.na(pmatch(c("sv"),x[i])))) x[i] <- 'svm'
-    else if (any(!is.na(pmatch(c("glm"),x[i])))) x[i] <- 'glm'
-    else if (any(!is.na(pmatch(c("lin"),x[i])))) x[i] <- 'glm'
-    else if (any(!is.na(pmatch(c("lm"),x[i])))) x[i] <- 'glm'
-    else if (any(!is.na(pmatch(c("gam"),x[i])))) x[i] <- 'gam'
-    else if (any(!is.na(pmatch(c("maxl"),x[i])))) x[i] <- 'maxlike'
-    else if (any(!is.na(pmatch(c("maxe"),x[i])))) x[i] <- 'maxent'
-    else if (any(!is.na(pmatch(c("bio"),x[i])))) x[i] <- 'bioclim'
-    else if (any(!is.na(pmatch(c("do"),x[i])))) x[i] <- 'domain'
-    else if (any(!is.na(pmatch(c("mah"),x[i])))) x[i] <- 'mahalanobis'
-    else if (any(!is.na(pmatch(c("nn"),x[i])))) x[i] <- 'nnet'
-    else if (any(!is.na(pmatch(c("mar"),x[i])))) x[i] <- 'mars'
-    else if (any(!is.na(pmatch(c("fd"),x[i])))) x[i] <- 'fda'
-  }
-  x
-}
-#------
 
-#---------
-.createModelSetting <- function(models) {
-  m <- c('glm','lm','brt','gbm','rf','randomforests','svm','ksvm','gam')
-  models <- tolower(models)
-  #-------
-  w <- which(models == 'gbm')
-  if (length(w) > 0) models[w] <- 'brt'
-  
-  w <- which(models == 'lm')
-  if (length(w) > 0) models[w] <- 'glm'
-  
-  w <- which(models == 'randomforests')
-  if (length(w) > 0) models[w] <- 'rf'
-  
-  w <- which(models == 'ksvm')
-  if (length(w) > 0) models[w] <- 'svm'
-  
-  models <- unique(models)
-  
-  #-------
-  w <- models %in% m
-  if (!any(w)) stop('the specifed models are unknown!')
-  models <- models[which(w)]
-  s <- new("sdmSettings",basicSettings=new('.basicSettings'))
-  
-  for (i in seq_along(models)) {
-    if (models[i] == 'glm') {
-      s@methods <- c(s@methods,'glm')
-      s@modelSettings <- c(s@modelSettings,glm=new('.glmSettings'))
-    } else if (models[i] == 'gam') {
-      s@methods <- c(s@methods,'gam')
-      s@modelSettings <- c(s@modelSettings,gam=new('.gamSettings'))
-    } else if (models[i] == 'brt') {
-      s@methods <- c(s@methods,'brt')
-      s@modelSettings <- c(s@modelSettings,brt=new('.brtSettings'))
-    } else if (models[i] == 'rf') {
-      s@methods <- c(s@methods,'rf')
-      s@modelSettings <- c(s@modelSettings,rf=new('.rfSettings'))
-    } else if (models[i] == 'svm') {
-      s@methods <- c(s@methods,'svm')
-      s@modelSettings <- c(s@modelSettings,svm=new('.svmSettings'))
-    }
-  }
-  s
+.getFormula.gammgcv.rhs <- function(n,nFact=NULL,env=parent.frame()) {
+  if (!is.null(nFact)) as.formula(paste('~',paste(c(paste(paste('s(',n,sep=''),')',sep=''),nFact),collapse='+'),sep=''),env = env)
+  else as.formula(paste('~',paste(paste(paste('s(',n,sep=''),')',sep=''),collapse='+'),sep=''),env = env)
+}
+.getFormula.gammgcv <- function(n,nFact=NULL,env=parent.frame()) {
+  if (!is.null(nFact)) as.formula(paste(n[1],'~',paste(c(paste(paste('s(',n[-1],sep=''),')',sep=''),nFact),collapse='+'),sep=''),env = env)
+  else as.formula(paste(n[1],'~',paste(paste(paste('s(',n[-1],sep=''),')',sep=''),collapse='+'),sep=''),env = env)
 }
 #----------
 
-
-#----------
-
-.species2df <- function(x,n=1) {
-  if (inherits(x,'singleSpecies')) {
-    d <- data.frame(x@train@Occurrence@Occurrence,x@train@Features@features)
-    colnames(d) <- c(x@train@Occurrence@species.name,x@train@Features@featureNames)
-    rownames(d) <- x@train@Occurrence@index@ID
-  } else if (inherits(x,'multipleSpecies')) {
-    d <- data.frame(x@train@Occurrence@Occurrence,x@train@Features@features)
-    colnames(d) <- c(x@train@Occurrence@species.names,x@train@Features@featureNames)
-    rownames(d) <- x@train@Occurrence@index@ID
-  } else if (inherits(x,'.singleSpeciesData')) {
-    d <- data.frame(x@Occurrence@Occurrence,x@Features@features)
-    colnames(d) <- c(x@Occurrence@species.name,x@Features@featureNames)
-    rownames(d) <- x@Occurrence@index@ID
-  } else if (inherits(x,'.multipleSpeciesData')) {
-    d <- data.frame(x@Occurrence@Occurrence,x@Features@features)
-    colnames(d) <- c(x@Occurrence@species.names,x@Features@featureNames)
-    rownames(d) <- x@Occurrence@index@ID
-  } else if (inherits(x,'SpeciesDataList')) {
-    d <- data.frame(x@train@SpeciesDataList[[n]]@Occurrence@Occurrence,x@train@SpeciesDataList[[n]]@Features@features)
-    colnames(d) <- c(x@train@SpeciesDataList[[n]]@Occurrence@species.name,x@train@SpeciesDataList[[n]]@Features@featureNames)
-    rownames(d) <- x@train@SpeciesDataList[[n]]@Occurrence@index@ID
-  } else if (inherits(x,'.SpeciesDataList')) {
-    d <- data.frame(x@SpeciesDataList[[n]]@Occurrence@Occurrence,x@SpeciesDataList[[n]]@Features@features)
-    colnames(d) <- c(x@SpeciesDataList[[n]]@Occurrence@species.name,x@SpeciesDataList[[n]]@Features@featureNames)
-    rownames(d) <- x@SpeciesDataList[[n]]@Occurrence@index@ID
-  } else if (inherits(x,'data.frame')) {
-    d <- x
-  }
-  d
-}
-#---------
+.addLHSformula <- function(f,lhs,env=parent.frame()) {
+  # ~ x1 + x2; add lhs to such formula
+  as.formula(paste(lhs,'~',as.character(f)[2]),env = env )
+} 
 
 
-
-#----------
-
-.getSpeciesIndex <- function(x,n=1) {
-  d <- NA
-  if (inherits(x,'singleSpecies') || inherits(x,'multipleSpecies')) {
-    d <- x@train@Occurrence@index@ID
-  } else if (inherits(x,'.singleSpeciesData') || inherits(x,'.multipleSpeciesData')) {
-    d <- x@Occurrence@index@ID
-  } else if (inherits(x,'SpeciesDataList')) {
-    d <- x@train@SpeciesDataList[[n]]@Occurrence@index@ID
-  } else if (inherits(x,'.SpeciesDataList')) {
-    d <- x@SpeciesDataList[[n]]@Occurrence@index@ID
-  } else if (inherits(x,'data.frame')) {
-    d <- 1:nrow(x)
-  } else if (inherits(x,'sdmSettings')) {
-    if (!is.null(x@basicSettings@replicates)) {
-      w <- which(c('cross-balidation','subsampling') %in% names(x@basicSettings@replicates@row.index))
-      if (any(w)) {
-        w <- c('cross-balidation','subsampling')[w][1]
-        d <- x@basicSettings@replicates@row.index[[w]][,1]
-      }
-    }
-  }
-  d
-}
-
-#----------
-
-.getBasicSetting <- function(p) {
-  n <- names(p)
-  w <- n %in% c('formula','interaction.depth','test.percent','replicate.method','pseudo.method','pseudo.n','var.importance','var.selection')
-  if (any(w)) {
-    bs <- new('.basicSettings')
-    w <- n[which(w)]
-    for (i in seq_along(w)) {
-      if (w[i] == 'formula') {
-        if ('data' %in% n) {
-          if ('interaction.depth' %in% n) int.d <- p[['interaction.depth']]
-          else int.d <- 1
-          ex <- .featExt(p[['data']],p[['formula']],int.d)
-          bs@featureNames <- c(ex$nf,ex$nFact)
-          bs@feature.types <- ex$features
-          bs@interaction.depth <- int.d
-          bs@formula <- .genFormula(ex$features,paste(ex$nsp,collapse='+'))
-        } else stop('formula is used but data is not specified...!')
-      }
-      else if (w[i] == 'replicate.method') {
-        if ('sdmSetting' %in% n && inherits(p[['sdmSetting']],'sdmSettings') && any(is.na(.getSpeciesIndex(p[['sdmSetting']])))) {
-          if (!'test.percent' %in% n) test.percent <- 30
-          else test.percent <- p[['test.percent']]
-          if (!'cv.folds' %in% n) cv.folds <- 5
-          else cv.folds <- p[['cv.folds']]
-          if (!'replicates' %in% n) replicates <- 1
-          else replicates <- p[['replicates']]
-          rpl <- .replicate(.getSpeciesIndex(p[['sdmSetting']]),p[['replicate.method']],replicates,cv.folds,test.percent)
-          bs@basicSettings@replicates <- rpl
-          bs@basicSettings@test.percentage <- test.percent
-        } else if ('data' %in% n) {
-          if (!'test.percent' %in% n) test.percent <- 30
-          else test.percent <- p[['test.percent']]
-          if (!'cv.folds' %in% n) cv.folds <- 5
-          else cv.folds <- p[['cv.folds']]
-          if (!'replicates' %in% n) replicates <- 1
-          else replicates <- p[['replicates']]
-          rpl <- .replicate(.getSpeciesIndex(data),p[['replicate.method']],replicates,cv.folds,test.percent)
-          bs@replicates <- rpl
-          bs@test.percentage <- test.percent
-        } else {
-          stop('to set the replications, data (or a sdmSettings object) is needed...')
-        }
-      }
-      else if (w[i] == 'test.percent' && !'replicate.method' %in% n) {
-        bs@basicSettings@test.percentage <- p[['test.percent']]
-      } else if (w[i] == 'pseudo.method') bs@pseudo.absence.method <- p[['pseudo.method']]
-      else if (w[i] == 'pseudo.n') bs@pseudo.absence.number <- p[['pseudo.n']]
-      else if (w[i] == 'var.importance') bs@variable.importance <- p[['var.importance']]
-      else if (w[i] == 'var.selection') bs@variable.selection <- p[['var.selection']]
-    } 
-  } else bs <- NULL
-  bs
-}
-#---------
-
-.featExt <- function(d,formula,interaction.depth) {
-  d <- .species2df(d)
-  ex <- .exformula(formula,d)
-  
-  if (!all(c(ex$nf,ex$nFact) %in% colnames(d))) stop('data does not contain one or more variable(s) specified in the formula!')
-  
-  if (length(ex$nsp) > 0) {
-    w <- which(ex$nsp %in% colnames(d))
-    if (length(w) > 0)  {
-      ex$nsp <- ex$nsp[w]
-    } else stop('data object does not contain the species data specified in the formula!')
-  }
-  
-  #s@basicSettings@featureNames <- c(ex$nf,ex$nFact)
-  
-  #--
-  if (interaction.depth > 1 & length(c(ex$nf,ex$nFact)) > 1) {
-    w <- .interaction.generate(c(ex$nf,ex$nFact),interaction.depth)
-    for (i in seq_along(ex$features)) {
-      for (j in seq_along(ex$features[[i]])) {
-        f <- ex$features[[i]][j]
-        if (any(!is.na(pmatch(c("interaction@"),f)))) {
-          ww <- strsplit(f,'@')[[1]][-1]
-          ww <- which(unlist(lapply(lapply(w,function(x) sort(strsplit(x,'@')[[1]][-1])),function(x) all(x %in% ww))))
-          if (length(ww) > 0) w <- w[-ww]
-        }
-      }
-    }
-    n <- names(ex$features)
-    for (i in seq_along(w)) {
-      ww <- which(n == strsplit(w[i],'@')[[1]][2])
-      ex$features[[ww]] <- c(ex$features[[ww]],w[i])
-    }
-  }
-  ex
-}
-
-#---------
-.interaction.generate <- function(n,depth) {
-  if (depth > length(n)) depth <- length(n)
-  out <- c()
-  for (i in 2:depth) {
-    co <- combn(n,i)
-    for (j in 1:ncol(co)) out <- c(out,paste('interaction@',paste(co[,j],collapse='@'),sep=''))
-  }
-  out
-}
-#-----------
-
-
-.pseudo <- function(p,predictors,n=1000,method='random',r=3) {
-  method <- tolower(method)
-  w <- which(unlist(lapply(method,function(x) {  any(!is.na(pmatch(c("ran"),x))) | 
-                                                   any(!is.na(pmatch(c("geo"),x))) | 
-                                                   any(!is.na(pmatch(c("bio"),x))) | 
-                                                   any(!is.na(pmatch(c("ens"),x))) |
-                                                   any(!is.na(pmatch(c("dis"),x)))
-  })))
-  if (length(w) == 0) stop('method is not recognized!')
-  else method <- method[w]
-  
-  out <- list()
-  rm <- rep(method,each=r)
-  for (i in seq_along(rm)) {
-    if (any(!is.na(pmatch(c("ran"),rm[i])))) rm[i] <- 'random'
-    else if (any(!is.na(pmatch(c("bio"),rm[i])))) rm[i] <- 'bioclim'
-    else if (any(!is.na(pmatch(c("env"),rm[i])))) rm[i] <- 'envdist'
-    else if (any(!is.na(pmatch(c("geo"),rm[i])))) rm[i] <- 'geodist'
-    else if (any(!is.na(pmatch(c("ens"),rm[i])))) rm[i] <- 'ensemble'
-    else if (any(!is.na(pmatch(c("dis"),rm[i])))) rm[i] <- 'envdist'
-  }
-  
-  ps <- new('.pseudo.absence')
-  ps@method <- rm
-  ps@n.replicates <- r
-  ps@featureNames <- names(predictors)
-  
-  for (i in seq_along(rm)) {
-    if (rm[i] == 'random') {
-      s <- sampleRandom(predictors,n,cells=TRUE,xy=TRUE)
-      if(!missing(p)) {
-        p.cells <- cellFromXY(predictors,p)
-        s <- s[which(!s[,'cell'] %in% p.cells),]
-      }
-      
-      ps@coord.names <- colnames(xyFromCell(predictors,s[1:2,'cell']))
-      ps@pseudo.absence[[i]] <- s[,-which(colnames(s) == 'cell')]
-      
-    } else if (rm[i] == 'envdist') {
-      
-    }
-  }
-  ps
-}
-
-
-
-#-----------
-
-cv.folds <- function(x,k=5,r=1) {
-  # based on the function of cvFolds in the package cvTools (Author: Andreas Alfons)
-  if (length(x) == 1) x <- n <- round(x,0)
-  else n <- length(x)
-  if (k > n) {
-    k <- n
-    warning('k cannot be greater than the number of observation! It is changed to the number of observation, which is equivalent to leave one out...')
-  }
-  r <- round(r,0)
-  if (r <=0) r <- 1
-  list(fold=rep(seq_len(k), length.out =n),row.index=replicate(r, sample(x)))
-}
-#-----------
-
-.replicate <- function(x,method='cv',r=1,k=5,test.percent=NULL) {
-  method <- tolower(method)
-  w <- which(unlist(lapply(method,function(x) {  any(!is.na(pmatch(c("cros"),x))) | 
-                                                   any(!is.na(pmatch(c("cv"),x))) | 
-                                                   any(!is.na(pmatch(c("bo"),x))) | 
-                                                   any(!is.na(pmatch(c("sub"),x)))
-  })))
-  if (length(w) == 0) stop('method is not recognized!')
-  else method <- method[w]
-  
-  out <- list()
-  rm <- method
-  for (i in seq_along(rm)) {
-    if (any(!is.na(pmatch(c("cros"),rm[i])))) rm[i] <- 'cross-validation'
-    else if (any(!is.na(pmatch(c("cv"),rm[i])))) rm[i] <- 'cross-validation'
-    else if (any(!is.na(pmatch(c("bo"),rm[i])))) rm[i] <- 'bootstrap'
-    else if (any(!is.na(pmatch(c("sub"),rm[i])))) rm[i] <- 'subsampling'
-  }
-  
-  if (r <= 0) r <- 1
-  r <- round(r,0)
-  
-  ps <- new('.replicates')
-  ps@method <- rm
-  ps@n.replicates <- r
-  
-  rm <- unique(rm)
-  for (i in seq_along(rm)) {
-    if (rm[i] == 'cross-validation') {
-      if (k > length(x)) {
-        k <- length(x)
-        warning('k cannot be greater than the number of observations! It is changed to the number of observations (i.e., leave one out)')
-      }
-      ps@fold[[rm[i]]] <- rep(seq_len(k), length.out=length(x))
-      ps@row.index[[rm[i]]] <- replicate(r, sample(x))
-    } else if (rm[i] == 'bootstrap') {
-      ps@row.index[[rm[i]]] <- replicate(r, sample(x,replace=TRUE))
-      ps@fold[[rm[i]]] <- list()
-      for (j in 1:ncol(ps@row.index[[rm[i]]])) {
-        w <- x %in% ps@row.index[[rm[i]]][,j]
-        ps@fold[[rm[i]]][[j]] <- ifelse(w,1,2)
-      }
-    } else if (rm[i] == 'subsampling') {
-      if (is.null(test.percent)) test.percent <- 0.3
-      else if (test.percent > 100) {
-        warning('test percentage should be less than 100, it is changed to the default, 30!')
-        test.percent <- 0.3
-      }
-      
-      if (test.percent > 1) test.percent <- test.percent / 100
-      test.nr <- ceiling(length(x) * test.percent)
-      f <- rep(1:2,times=c((length(x)-test.nr),test.nr))
-      ps@fold[[rm[i]]] <- f
-      ps@row.index[[rm[i]]] <- replicate(r, sample(x))
-    }
-  }
-  ps
-}
-#------
-.ftype_names <- function(x) {
-  xo <- c()
-  for (i in seq_along(x)) {
-    for (j in seq_along(x[[i]])) {
-      xo <- c(xo,strsplit(x[[i]][j],'@')[[1]][1])
-    }
-  }
-  unique(xo)
-}
-#------
-
-if (!isGeneric('.updateModel<-')) {
-  setGeneric('.updateModel<-', function(x,value)
-    standardGeneric('.updateModel<-'))
-}
-#---
-
-
-setReplaceMethod('.updateModel','list', 
-                 function(x,value) {
-                   n <- value[[1]]
-                   k <- value[[3]]
-                   i <- value[[4]]
-                   success <- TRUE
-                   if (inherits(value[[2]][[n]], "try-error")) {
-                     value[[2]][[n]] <- NA
-                     success <- FALSE
-                   }
-                   x[[k]]@n.run <- as.integer(x[[k]]@n.run + 1)
-                   x[[n]]@run.success[i] <- success
-                   x[[n]]@modelObjectList[[i]] <- value[[2]][[n]]
-                   if(!is.null(value[[5]])) x[[n]]@evaluationList[[i]] <- value[[5]][[n]]
-                   if(!is.null(value[[6]])) x[[n]]@independent.evaluationList[[i]] <- value[[6]][[n]]
-                   x
-                 }
-)
-
-
-#-----------
-
-#------------
-if (!isGeneric("sdmSetting")) {
-  setGeneric("sdmSetting", function(formula,data,methods,...)
-    standardGeneric("sdmSetting"))
-}
-
-
-setMethod('sdmSetting', signature(formula='missing','speciesData','character'), 
-          function(formula,data,methods,interaction.depth=1,replicates=1,replicate.method=NULL,
-                   cv.folds=NULL,test.percent=NULL,pseudo.method=NULL,pseudo.n=NULL,...) {
-            s <- .createModelSetting(models)
-            s@basicSettings@interaction.depth <- interaction.depth
-            s@basicSettings@replicates <- replicates
-            s@basicSettings@replication.type <- replication.type
-            s@basicSettings@test.percentage <- test.percent
-            s@basicSettings@pseudo.absence.method <- pseudo.method
-            s@basicSettings@pseudo.absence.number <- pseudo.n
-            s
-          }
-)
-#---------
-
-setMethod('sdmSetting', signature(formula='formula','speciesData','character'), 
-          function(formula,data,methods,interaction.depth=1,replicates=1,replicate.method=NULL,
-                   cv.folds=NULL,test.percent=NULL,pseudo.method=NULL,pseudo.n=NULL,var.importance=TRUE,
-                   var.selection=FALSE,...) {
-            s <- .createModelSetting(methods)
-            ex <- .featExt(data,formula,interaction.depth)
-            s@basicSettings@featureNames <- c(ex$nf,ex$nFact)
-            s@basicSettings@feature.types <- ex$features
-            s@basicSettings@formula <- .genFormula(ex$features,ex$nsp)
-            
-            s@basicSettings@interaction.depth <- interaction.depth
-            
-            if (!is.null(replicate.method)) {
-              replicate.method <- tolower(replicate.method)
-              if (is.null(test.percent)) test.percent <- 30
-              if (is.null(cv.folds)) cv.folds <- 5
-              #if (any(!is.na(pmatch(c("cros"),replicate.method))) | any(!is.na(pmatch(c("cv"),replicate.method))))
-              rpl <- .replicate(data@train@Occurrence@index@ID,replicate.method,replicates,cv.folds,test.percent)
-              rpl@index.name <- data@train@Occurrence@index@index.name
-              s@basicSettings@replicates <- rpl
-              s@basicSettings@test.percentage <- test.percent
-            } else if (!is.null(test.percent)) {
-              rpl <- .replicate(data@train@Occurrence@index@ID,'sub',replicates,test.percent = test.percent)
-              s@basicSettings@replicates <- rpl
-              s@basicSettings@test.percentage <- test.percent
-            }
-            
-            s@basicSettings@pseudo.absence.method <- pseudo.method
-            s@basicSettings@pseudo.absence.number <- pseudo.n
-            p <- list(...)
-            n <- tolower(names(p))
-            names(p) <- n
-            
-            if ('glm' %in% n) {
-              if (!inherits(p[['glm']],'list')) warning('setting for glm model should be a list. 
-                                                        glm argument is ignored, you can use glmSetting to update this sdmSetting...')
-              else {
-                p[['glm']]$data <- data
-                w <- try(do.call('glmSetting',p[['glm']]),silent=TRUE)
-                if (!inherits(w, "try-error")) sdmSetting(s) <- w
-                else warning('specific setting for glm is ignored due to error in parameter matching, you can use glmSetting to update this sdmSetting...')
-              }
-            }
-            #---
-            if ('brt' %in% n) {
-              if (!inherits(p[['brt']],'list')) warning('setting for brt model should be a list.
-                                                        brt argument is ignored, you can use brtSetting to update this sdmSetting...')
-              else {
-                p[['brt']]$data <- data
-                w <- try(do.call('brtSetting',p[['brt']]),silent=TRUE)
-                if (!inherits(w, "try-error")) sdmSetting(s) <- w
-                else warning('specific setting for brt is ignored due to error in parameter matching, you can use brtSetting to update this sdmSetting...')
-              }
-            }
-            #---
-            if ('rf' %in% n) {
-              if (!inherits(p[['rf']],'list')) warning('setting for rf model should be a list.
-                                                       rf argument is ignored, you can use rfSetting to update this sdmSetting...')
-              else {
-                p[['rf']]$data <- data
-                w <- try(do.call('rfSetting',p[['rf']]),silent=TRUE)
-                if (!inherits(w, "try-error")) sdmSetting(s) <- w
-                else warning('specific setting for rf is ignored due to error in parameter matching, you can use rfSetting to update this sdmSetting...')
-              }
-            }
-            #----
-            s
-            }
-)
-#--------------
-
-if (!isGeneric('sdmSetting<-')) {
-  setGeneric('sdmSetting<-', function(x,value)
-    standardGeneric('sdmSetting<-'))
-}
-
-#---
-
-setReplaceMethod('sdmSetting','ANY', 
-                 function(x,value) {
-                   if (inherits(value,'.glmSettings')) {
-                     if (!'glm' %in% x@methods) x@methods <- c(x@methods,'glm')
-                     x@modelSettings$glm <- value
-                   } else if (inherits(value,'.brtSettings')) {
-                     if (!'brt' %in% x@methods) x@methods <- c(x@methods,'brt')
-                     x@modelSettings$brt <- value
-                   } else if (inherits(value,'.rfSettings')) {
-                     if (!'rf' %in% x@methods) x@methods <- c(x@methods,'rf')
-                     x@modelSettings$rf <- value
-                   } else if (inherits(value,'.svmSettings')) {
-                     if (!'svm' %in% x@methods) x@methods <- c(x@methods,'svm')
-                     x@modelSettings$svm <- value
-                   } else if (inherits(value,'.gamSettings')) {
-                     if (!'gam' %in% x@methods) x@methods <- c(x@methods,'gam')
-                     x@modelSettings$gam <- value
-                   }
-                   x
-                 }
-)
-
-#--------------
-
-if (!isGeneric("glmSetting")) {
-  setGeneric("glmSetting", function(family,...)
-    standardGeneric("glmSetting"))
-}
-
-setMethod('glmSetting', signature(family='ANY'), 
-          function(family,...) {
-            s <- new('.glmSettings')
-            if (!missing(family)) s@family <- family
-            p <- list(...)
-            n <- names(p)
-            n <- .paramFix(n)
-            names(p) <- n
-            
-            if ('replicates' %in% n && !'replicate.method' %in% n) {
-              if (p[['replicates']] > 1) {
-                n <- c(n,'replicate.method')
-                p[['replicate.method']] <- 'subsampling'
-              } 
-            }
-            if ('test.percent' %in% n && !'replicate.method' %in% n) {
-              if (p[['test.percent']] > 0) {
-                n <- c(n,'replicate.method')
-                p[['replicate.method']] <- 'subsampling'
-                if (!'replicates' %in% n) {
-                  n <- c(n,'replicates')
-                  p[['replicates']] <- 1
-                }
-              }
-            }
-            bs <- .getBasicSetting(p)
-            if (!is.null(bs)) s@basicSettings <- bs
-            
-            w <- which(n %in% c('weights','subset','na.action','start','etastart','mustart','offset','control','model','method','x','y','contrasts'))
-            if (any(w)) s@otherSettings <- p[w]
-            w <- which(n %in% c('predict'))
-            if (any(w)) {
-              if(is.list(p[w])) {
-                if ('type' %in% names(p[w])) s@predictSettings <- p[w]
-                else s@predictSettings <- c(s@predictSettings,p[w])
-              }
-            } 
-            s
-          }
-)
-######################
+#----------------
 
 .mahal <- function(d1,d2) {
   co <- solve(cov(d1))
-  mahalanobis(d2,colMeans(d1),co,inverted=TRUE)
+  mahalanobis(d2,colMeans(d1,na.rm=TRUE),co,inverted=TRUE)
 }
 #----------
 .checkFactor <- function(f1,f2) {
+  f2 <- factor(f2)
+  f1 <- factor(f1)
   l <- levels(f2)[!levels(f2) %in% levels(f1)]
   ww <- NULL
   if (length(l) > 0) {
@@ -898,6 +86,13 @@ setMethod('glmSetting', signature(family='ANY'),
 
 
 #----------------
+.eqFactLevel <- function(data1,data2) {
+  nFact <- colnames(data2)[.where(is.factor,data2)]
+  for (i in seq_along(nFact)) data2[,nFact[i]] <- factor(data2[,nFact[i]],levels = levels(data1[,nFact[i]]))
+  data2
+}
+#-------------
+
 .factorFix <- function(data1,data2,nFact,nf) {
   # assign the problematic factors to the more similar factors according to continuous variables
   # if no continus variable does exist, then it is assigned to a dominant class.
@@ -921,13 +116,24 @@ setMethod('glmSetting', signature(family='ANY'),
       for (j in seq_along(p)) {
         w <- fc[['p']][[p[[j]]]]
         if (!is.null(nf)) {
-          d2 <- data2[w,which(colnames(data2) %in% nf)]
           m <- rep(NA,length(np))
-          for (k in seq_along(np)) {
-            ww <- fc[['np']][[np[[k]]]]
-            d1 <- data2[ww,which(colnames(data2) %in% nf)]
-            m[k] <- mean(try(.mahal(d1,d2),silent=TRUE),na.rm=TRUE)
+          d2 <- data2[w,which(colnames(data2) %in% nf)]
+          if (length(nf) > 1) {
+            options(warn=-1)
+            for (k in seq_along(np)) {
+              ww <- fc[['np']][[np[[k]]]]
+              d1 <- data2[ww,which(colnames(data2) %in% nf)]
+              m[k] <- mean(try(.mahal(d1,d2),silent=TRUE),na.rm=TRUE)
+            }
+            options(warn=0)
+          } else {
+            for (k in seq_along(np)) {
+              ww <- fc[['np']][[np[[k]]]]
+              d1 <- data2[ww,which(colnames(data2) %in% nf)]
+              m[k] <- abs(mean(d2,na.rm=TRUE) - mean(d1,na.rm=TRUE))
+            }
           }
+          
           ww <- which.min(m)
           if (length(ww) > 0) dd[w,nFact[i]] <- np[ww]
           else {
@@ -946,370 +152,608 @@ setMethod('glmSetting', signature(family='ANY'),
     }
   }
   for (i in seq_along(nFact)) dd[,nFact[i]] <- factor(dd[,nFact[i]])
-  dd
+  .eqFactLevel(data1,dd)
 }
-#---------------
+#--------
 
-.eqFactLevel <- function(data1,data2) {
-  nFact <- colnames(data2)[.where(is.factor,data2)]
-  for (i in seq_along(nFact)) data2[,nFact[i]] <- factor(data2[,nFact[i]],levels = levels(data1[,nFact[i]]))
-  data2
+.factorFixW <- function(data1,data2,nFact,nf) {
+  # just generates a list to report which class should be assigned to which class!
+  if (missing(nFact) || is.null(nFact)) nFact <- colnames(data2)[.where(is.factor,data2)]
+  if (missing(nf) || is.null(nf)) {
+    nf <- colnames(data2)[!colnames(data2) %in% nFact]
+    if (length(nf) == 0) nf <- NULL
+  }
+  
+  dd <- data2
+  o <- list()
+  for (i in seq_along(nFact)) {
+    data1[,nFact[i]] <- factor(data1[,nFact[i]])
+    data2[,nFact[i]] <- factor(data2[,nFact[i]])
+    dd[,nFact[i]] <- as.character(dd[,nFact[i]])
+    
+    fc <- .checkFactor(data1[,nFact[i]],data2[,nFact[i]])
+    if (!is.null(fc)) {
+      p <- names(fc$p)
+      np <- names(fc$np)
+      for (j in seq_along(p)) {
+        w <- fc[['p']][[p[[j]]]]
+        if (!is.null(nf)) {
+          m <- rep(NA,length(np))
+          d2 <- data2[w,which(colnames(data2) %in% nf)]
+          if (length(nf) > 1) {
+            options(warn=-1)
+            for (k in seq_along(np)) {
+              ww <- fc[['np']][[np[[k]]]]
+              d1 <- data2[ww,which(colnames(data2) %in% nf)]
+              m[k] <- mean(try(.mahal(d1,d2),silent=TRUE),na.rm=TRUE)
+            }
+            if (any(is.na(m))) {
+              m <- matrix(NA,nrow=length(nf),ncol=length(np))
+              for (k in seq_along(np)) {
+                ww <- fc[['np']][[np[[k]]]]
+                d1 <- data2[ww,which(colnames(data2) %in% nf)]
+                for (nfi in seq_along(nf)) {
+                  m[nfi,k] <- abs(mean(d2[[nf[nfi]]],na.rm=TRUE) - mean(d1[[nf[nfi]]],na.rm=TRUE))
+                }
+              }
+              m <- abs(apply(t(apply(m,1,function(x) (x - mean(x)) / sd(x))),2,mean))
+            }
+            options(warn=0)
+          } else {
+            for (k in seq_along(np)) {
+              ww <- fc[['np']][[np[[k]]]]
+              d1 <- data2[ww,which(colnames(data2) %in% nf)]
+              m[k] <- abs(mean(d2,na.rm=TRUE) - mean(d1,na.rm=TRUE))
+            }
+          }
+          
+          ww <- which.min(m)
+          if (length(ww) > 0) {
+            o <- c(o,list(c(field=nFact[i],old=unique(dd[w,nFact[i]]),new=np[ww])))
+          } else {
+            dom.class <- summary(data1[,nFact[i]])
+            dom.class <- attr(sort(dom.class, decreasing = TRUE)[1], "names")
+            o <- c(o,list(c(field=nFact[i],old=unique(dd[w,nFact[i]]),new=dom.class)))
+          }
+        } else {
+          dom.class <- summary(data1[,nFact[i]])
+          dom.class <- attr(sort(dom.class, decreasing = TRUE)[1], "names")
+          o <- c(o,list(c(field=nFact[i],old=unique(dd[w,nFact[i]]),new=dom.class)))
+        }
+      }
+    }
+  }
+  o
 }
-############################
 
+#--------
 
-#-------------
-
-
-.paramCheck <- function(x) {
-  n <- names(x)
-  n <- .paramFix(n)
-  names(x) <- n
-  if (!'interaction.depth' %in% n) x$'interaction.depth' <-1
-  if (!'replicates' %in% n) x$'replicates' <-1
-  if (!'replicate.method' %in% n) x$'replicate.method' <-NULL
-  if (!'cv.folds' %in% n) x$'cv.folds' <-NULL
-  if (!'test.percent' %in% n) x$'test.percent' <-NULL
-  if (!'pseudo.method' %in% n) x$'pseudo.method' <-NULL
-  if (!'pseudo.n' %in% n) x$'pseudo.n' <-NULL
-  if (!'var.importance' %in% n) x$'var.importance' <-TRUE
-  if (!'var.selection' %in% n) x$'var.selection' <-FALSE
-  x
+.factorFix.bm <- function(data1,data2,nFact,nf) {
+  # problematic factors are moved from data2 to data1
+  if (missing(nFact) || is.null(nFact)) nFact <- colnames(data2)[.where(is.factor,data2)]
+  er <- FALSE
+  
+  for (i in seq_along(nFact)) {
+    data1[,nFact[i]] <- factor(data1[,nFact[i]])
+    data2[,nFact[i]] <- factor(data2[,nFact[i]])
+    fc <- .checkFactor(data1[,nFact[i]],data2[,nFact[i]])
+    if (!is.null(fc)) {
+      er <- TRUE
+      p <- names(fc$p)
+      for (j in seq_along(p)) {
+        ww <- fc[['p']][[p[[j]]]]
+        ww <- sample(ww,1)
+        data1 <- rbind(data1,data2[ww,])
+        data2 <- data2[-ww,]
+        #dd <- dd[-ww,]
+      }
+    }
+  }
+  if (er) {
+    for (i in seq_along(nFact)) {
+      data1[,nFact[i]] <- factor(data1[,nFact[i]])
+      data2[,nFact[i]] <- factor(data2[,nFact[i]])
+    }
+    return(list(train=data1,test=data2,IDs=fc$p))
+  }
 }
-#-----
+#--------
 
-.createSModels <- function (model) {
-  switch(model,
-         glm=new('.sdmModels',model='glm'),
-         brt=new('.sdmModels',model='brt'),
-         rf=new('.sdmModels',model='rf'),
-         svm=new('.sdmModels',model='svm'),
-         gam=new('.sdmModels',model='gam')
-  )
+.is.windows <- function() {
+  s <- Sys.info()
+  if (!is.null(s)) s[['sysname']] == 'Windows'
+  else FALSE
+}
+#---------
+.getRunID <- function(sm,sp,m) {
+  # from sdmModels, extract the modelID and runID (replicates) to be assigned to the model objects generated through fitting
+  w1 <- sm@run.info[,2] == sp
+  w2 <- sm@run.info[,3] == m
+  w1 <- w1 & w2
+  list(mID=sm@run.info[w1,1],rID=sm@run.info[w1,5])
+}
+
+#-----------
+.require <- function(x) {
+  # based on simplifying the code of the reqiure function in the base package
+  loaded <- paste("package", x, sep = ":") %in% search()
+  if (!loaded) {
+    value <- tryCatch(library(x,character.only = TRUE, logical.return = TRUE, warn.conflicts = FALSE, quietly = TRUE), error = function(e) e)
+    if (inherits(value, "error")) {
+      return(FALSE)
+    }
+    if (!value) return(FALSE)
+  } else value <- TRUE
+  value
 }
 #----------
-
-.getRunIndex <- function(x,r) {
-  if (as.vector(r[1,1]) == 'cross-validation') {
-    w <- which(x@fold[[ as.vector(r[1,1])]] !=  as.vector(r[1,2]))
-  } else w <- which(x@fold[[ as.vector(r[1,1])]] ==  as.vector(r[1,2]))
-  x@row.index[[as.vector(r[1,1])]][w,as.vector(r[1,3])]
-}
-.getTestIndex <- function(x,r) {
-  if (as.vector(r[1,1]) == 'cross-validation') {
-    w <- which(x@fold[[ as.vector(r[1,1])]] ==  as.vector(r[1,2]))
-  } else w <- which(x@fold[[ as.vector(r[1,1])]] !=  as.vector(r[1,2]))
-  x@row.index[[as.vector(r[1,1])]][w,as.vector(r[1,3])]
-}
-#-----
-.runScenarios <- function(s) {
-  runs <- data.frame(matrix(nrow=0,ncol=3))
-  colnames(runs) <- c('run_scenarios','fold','replicate')
-  m <- s@method
-  r <- s@n.replicates
-  for (i in seq_along(m)) {
-    if (m[i] == 'cross-validation') {
-      f <- unique(s@fold[[m[i]]])
-      runs <- rbind(runs,data.frame(run_scenarios=rep(m[i],r*length(f)),fold=rep(f,r),replicate=rep(1:r,each=length(f))))
-    } else {
-      runs <- rbind(runs,data.frame(run_scenarios=rep(m[i],r),fold=rep(1,r),replicate=1:r))
-    }
-  }
-  runs
-}
-
-#-----
-.showScenarios <- function(x) {
-  s <- unique(x$run_scenarios)
-  sc <- data.frame(matrix(nrow=length(s),ncol=3))
-  colnames(sc) <- c('scenarios','start','end')
-  sc[,1] <- s
-  for (i in seq_along(s)) {
-    sc[i,2:3] <- range(which(x[,1] == s[i]))
-  }
-  sc
-}
-#################
-
-.statFixname <- function(x) {
-  x <- tolower(x)
-  for (i in seq_along(x)) {
-    if (any(!is.na(pmatch(c("se"),x[i])))) x[i] <- 'sensitivity'
-    else if (any(!is.na(pmatch(c("sp"),x[i])))) x[i] <- 'specificity'
-    else if (any(!is.na(pmatch(c("ts"),x[i])))) x[i] <- 'TSS'
-    else if (any(!is.na(pmatch(c("ka"),x[i])))) x[i] <- 'kappa'
-    else if (any(!is.na(pmatch(c("nm"),x[i])))) x[i] <- 'NMI'
-    else if (any(!is.na(pmatch(c("pp"),x[i])))) x[i] <- 'ppv'
-    else if (any(!is.na(pmatch(c("np"),x[i])))) x[i] <- 'npv'
-    else if (any(!is.na(pmatch(c("cc"),x[i])))) x[i] <- 'ccr'
-    else if (any(!is.na(pmatch(c("mc"),x[i])))) x[i] <- 'mcr'
-    else if (any(!is.na(pmatch(c("or"),x[i])))) x[i] <- 'or'
-    else if (any(!is.na(pmatch(c("om"),x[i])))) x[i] <- 'ommission'
-    else if (any(!is.na(pmatch(c("com"),x[i])))) x[i] <- 'commission'
-    else if (any(!is.na(pmatch(c("pr"),x[i])))) x[i] <- 'predicted.prevalence'
-    else if (any(!is.na(pmatch(c("cor"),x[i])))) x[i] <- 'cor'
-    else if (any(!is.na(pmatch(c("auc"),x[i])))) x[i] <- 'auc'
-  }
-  x <- unique(x)
-  w <- which(x %in% c('sensitivity','specificity','TSS','Kappa','NMI','ppv','npv','ccr','mcr','or','ommission','commission','predicted.prevalence','cor','auc'))
-  x <- x[w]
-  
-  x
-}
-
-
-
-.getPerformanceStat <- function(e,stat,opt=2) {
-  stat <- .statFixname(stat)
-  stat <- tolower(stat)
-  switch(stat,
-         auc=e@AUC,
-         cor=e@COR,
-         tss=e@threshod_based[opt[1],5],
-         nmi=e@threshod_based[opt[1],7],
-         ppv=e@threshod_based[opt[1],8],
-         npv=e@threshod_based[opt[1],9],
-         ccr=e@threshod_based[opt[1],10],
-         predicted.prevalence=e@threshod_based[opt[1],11],
-         sensitivity=e@threshod_based[opt[1],3],
-         specificity=e@threshod_based[opt[1],4],
-         threshold=e@threshod_based[opt[1],2]
-  )
-}
-
-.is.empty <- function(x) {
-  if(length(x) == 0) return(TRUE)
-  else return(FALSE)
-}
-
-.getPerformance <- function(model,methods,species=1,stat,opt=2,independent=FALSE) {
-  model <- model@models@multiModelList[[species]]
-  if (missing(methods)) methods <- names(model@modelList)
-  if (missing(stat)) stat <- c('AUC','COR','TSS')
-  stat <- .statFixname(stat)
-  out <- vector('list',length(methods))
-  names(out) <- methods
-  #if (!independent && .is.empty(model@modelList[[methods[1]]]@evaluationList)) independent <- TRUE
-  #if (independent && .is.empty(model@modelList[[methods[1]]]@independent.evaluationList)) independent <- FALSE
-  
-  
-  for (m in methods) {
-    if (!.is.empty(model@modelList[[m]]@evaluation@evaluationList)) {
-      w <- length(model@modelList[[m]]@evaluation@evaluationList)
-      o <- matrix(nrow=w,ncol=length(stat))
-      colnames(o) <- stat
-      for (i in 1:w) {
-        o[i,] <- unlist(lapply(stat,function (x) .getPerformanceStat(model@modelList[[m]]@evaluation@evaluationList[[i]],x,opt)))
-      }
-      out[[m]] <- o
-    } else out[[m]] <- NULL
-    
-  }
-  out
-}
-
-
-######################
-
-.sdmFit <- function(data,setting) {
-  nFact <- nf <- NULL
-  s <- new('sdmModel',data=data,settings=setting)
-  rm(data,setting)
-  s@models@species.names <- names(s@data)
-  d <- .species2df(s@data)
-  d <- data.frame(d[,1],.model.frame(d,s@settings@basicSettings@feature.types))
-  colnames(d)[1] <- s@models@species.names
-  
-  if ('factor' %in% .ftype_names(s@settings@basicSettings@feature.types)) {
-    nf <- c()
-    for (f in s@settings@basicSettings@featureNames) {
-      if ('linear' %in% s@settings@basicSettings@feature.types[[f]]) nf <- c(nf,f)
-    }
-    nFact <- .where(is.factor,d)
-    nFact <- names(nFact[nFact])
-  }
-  
-  
-  if (!is.null(s@data@test)) {
-    dT <- .species2df(s@data@test)
-    dT <- data.frame(dT[,1],.model.frame(dT,s@settings@basicSettings@feature.types))
-    colnames(dT)[1] <- s@models@species.names
-    if (!is.null(nFact)) {
-      dT <- .factorFix(d,dT,nFact,nf)
-      dT <- .eqFactLevel(d,dT)
-    }
-  }
-  
-  names(s@settings@methods) <- s@settings@methods
-  
-  sMo <- lapply(s@settings@methods,.createSModels)
-  
-  funs <- lapply(s@settings@methods,function(x) get(paste('.',x,'Fit',sep='')))
-  funsP <- lapply(s@settings@methods,function(x) get(paste('.',x,'Predict',sep='')))
-  
+.loadLib <- function(pkgs) {
   options(warn=-1)
+  return(unlist(lapply(pkgs,function(x) {
+    all(unlist(lapply(x,function(p) {.require(p)})))
+  })))
+  options(warn=0)
+}
+#---------
+.getRecordID <- function(x,sp,id,train) {
+  # x is recordID list
+  # it finds the record ID of observation by the rowID used to generate train or dependent test, or in independent test
+  # train = FALSE means id belongs to independent test
+  if (train) {
+    x[[sp]]$train$rID[x[[sp]]$train$rowID %in% id]
+  } else {
+    x[[sp]]$test$rID[x[[sp]]$test$rowID %in% id]
+  }
+}
+
+.generateWL <- function(d,s) {
+  pkgs <- .sdmMethods$getPakagNames(s@methods)
   
-  if (!is.null(s@settings@basicSettings@replicates)) {
-    runs <- .runScenarios(s@settings@basicSettings@replicates)
-    e_sc <- data.frame(runIndex=as.integer(1:nrow(runs)),evalDependent=integer(nrow(runs)),evalIndependent=integer(nrow(runs)) )
-    
-    for (i in seq_along(sMo)) {
-      sMo[[i]]@modelObjectList <- vector('list',nrow(runs))
-      sMo[[i]]@run.index <- as.integer(1:nrow(runs))
-      sMo[[i]]@run.success <- logical(nrow(runs))
-      sMo[[i]]@evaluation@model <- sMo[[i]]@model
-      sMo[[i]]@evaluation@n.run <- nrow(runs)
-      sMo[[i]]@evaluation@scenarios <- e_sc
+  for (i in seq_along(pkgs)) {
+    if ('.temp' %in% pkgs[[i]]) {
+      #e <- .sdmMethods$userFunctions
+      #.movEnv2sdm(e)
+      if (!".sdmMethods$userFunctions" %in% search()) attach(.sdmMethods$userFunctions)
+      pkgs[[i]] <- pkgs[[i]][-which(pkgs[[i]] == '.temp')]
     }
-    rm(e_sc)
-    for (i in 1:nrow(runs)) {
-      run.ID <- .getRunIndex(s@settings@basicSettings@replicates,runs[i,])
-      test.ID <- .getTestIndex(s@settings@basicSettings@replicates,runs[i,])
+  }
+  
+  ww <- .loadLib(pkgs)
+  if (!all(ww)) {
+    if (!any(ww)) {
+      stop(paste('There is no installed packages rquired by the selected methods. Package names:',paste(unlist(pkgs),collapse=', ')))
+    } else {
+      warning(paste('There is no installed packages rquired by the methods:',paste(s@methods[!ww],collapse=', '),'; These methods are excluded! The packages need to be installed for these methods:',paste(unlist(pkgs[!ww]),collapse=', ')))
+      s@methods <- s@methods[ww]
+    }
+  }
+  
+  #fr <- .getFeaturetype(d,s@sdmFormula)
+  w <- new('.workload',ncore=s@ncore,data=d,setting=s,frame=s@featuresFrame)
+  hasTest <- 'test' %in% d@groups$training@values[,2]
+  nFact <- NULL
+  if (!is.null(d@factors) > 0 && any(d@factors %in% s@sdmFormula@vars)) nFact <- d@factors[d@factors %in% s@sdmFormula@vars]
+  nf <- .excludeVector(d@features.name,nFact)
+  nf <- nf[nf %in% s@sdmFormula@vars]
+  nFact <- nFact[nFact %in% s@sdmFormula@vars]
+  
+  for (sp in s@sdmFormula@species) {
+    dt <- as.data.frame(d,sp=sp,grp='train')
+    w$recordIDs[[sp]]$train <- data.frame(rID=dt[,1],rowID=1:nrow(dt))
+    f <- .getModelFrame(w$frame,dt,response=sp)
+    if (!is.null(f$specis_specific)) {
+      w$train[[sp]]$sdmDataFrame <- cbind(dt[,sp],f$features,f$specis_specific)
+    } else w$train[[sp]]$sdmDataFrame  <- cbind(dt[,sp],f$features)
+    colnames(w$train[[sp]]$sdmDataFrame)[1] <- sp
+    
+    if (hasTest) {
+      dt <- as.data.frame(d,sp=sp,grp='test')
+      w$recordIDs[[sp]]$test <- data.frame(rID=dt[,1],rowID=1:nrow(dt))
+      f <- .getModelFrame(w$frame,dt,response=sp)
+      if (!is.null(f$specis_specific)) {
+        w$test[[sp]]$sdmDataFrame <- cbind(dt[,sp],f$features,f$specis_specific)
+      } else w$test[[sp]]$sdmDataFrame <- cbind(dt[,sp],f$features)
+      colnames(w$test[[sp]]$sdmDataFrame)[1] <- sp
       
       if (!is.null(nFact)) {
-        d2 <- .factorFix(d[as.character(run.ID),],d[as.character(test.ID),],nFact,nf)
-        d2 <- .eqFactLevel(d[as.character(run.ID),],d2)
-      } else  d2 <- d[as.character(test.ID),]
-      
-      m <- lapply(funs,function(f,...) try(f(d[as.character(run.ID),],...),silent=TRUE),s=s@settings@modelSettings)
-      m2 <- lapply(funsP,function(f,...) try(f(d2,...),silent=TRUE),s=s@settings@modelSettings,models=m)
-      e <- lapply(s@settings@methods,function(x) {try(.evaluate(d2[,1],as.vector(m2[[x]])),silent=TRUE)})
-      e <- lapply(e,function(x) {if (inherits(x,'try-error')) NULL else x} )
-      if (!is.null(s@data@test)) {
-        mT <- lapply(funsP,function(f,...) try(f(dT,...),silent=TRUE),s=s@settings@modelSettings,models=m)
-        e2 <- lapply(s@settings@methods,function(x) {try(.evaluate(dT[,1],mT[[x]]),silent=TRUE)})
-        e2 <- lapply(e2,function(x) {if (inherits(x,'try-error')) NULL else x} )
-      } else e2 <- NULL
-      
-      for (j in seq_along(s@settings@methods)) {
-        success <- TRUE
-        if (inherits(m[[j]], "try-error")) {
-          m[[j]] <- NA
-          success <- FALSE
-        }
-        sMo[[j]]@n.run <- as.integer(sMo[[j]]@n.run + 1)
-        sMo[[j]]@run.success[i] <- success
-        sMo[[j]]@modelObjectList[[i]] <- m[[j]]
-        if (is.null(e[[j]])) {
-          sMo[[j]]@evaluation@scenarios[i,2] <- NA
-        } else {
-          sMo[[j]]@evaluation@scenarios[i,2] <- length(sMo[[j]]@evaluation@evaluationList) + 1
-          sMo[[j]]@evaluation@evaluationList[[sMo[[j]]@evaluation@scenarios[i,2]]] <- e[[j]]
+        
+        for (nF in nFact) {
+          fc <- .checkFactor(w$train[[sp]]$sdmDataFrame[,nF],w$test[[sp]]$sdmDataFrame[,nF])
+          if (!is.null(fc)) {
+            p <- names(fc$p)
+            for (j in seq_along(p)) {
+              ww <- fc[['p']][[p[[j]]]]
+              if (length(ww) > 1) ww <- sample(ww,1)
+              w$train[[sp]]$sdmDataFrame <- rbind(w$train[[sp]]$sdmDataFrame,w$test[[sp]]$sdmDataFrame[ww,])
+              w$test[[sp]]$sdmDataFrame[ww,] <- w$test[[sp]]$sdmDataFrame[-ww,]
+              w$data <- .updateGroup(w$data,c(.getRecordID(w$recordIDs,sp=sp,id = ww,train=FALSE),'test','train'))
+            }
+          }
         }
         
-        if (!is.null(e2) && !is.null(e2[[j]])) {
-          sMo[[j]]@evaluation@scenarios[i,3] <- length(sMo[[j]]@evaluation@evaluationList) + 1
-          sMo[[j]]@evaluation@evaluationList[[sMo[[j]]@evaluation@scenarios[i,3]]] <- e2[[j]]
-        } else {
-          sMo[[j]]@evaluation@scenarios[i,3] <- NA
+        #f <- .factorFix.bm(w$train[[sp]]$sdmDataFrame,w$test[[sp]]$sdmDataFrame,nFact)
+        #if (!is.null(f)) {
+        #  w$train[[sp]]$sdmDataFrame <- f$train
+        #  w$test[[sp]]$sdmDataFrame <- f$test
+        #}
+      }
+    }
+  }
+  
+  w$funs[['fit']] <- .sdmMethods$getFitFunctions(s@methods)
+  w$arguments[['fit']] <- .sdmMethods$getFitArguments(s@methods)
+  w$funs[['predict']] <- .sdmMethods$getPredictFunctions(s@methods)
+  w$arguments[['predict']] <- .sdmMethods$getPredictArguments(s@methods)
+  #w$dataObject.names <- unique(unlist(lapply(s@methods, .sdmMethods$getDataArgumentNames)))
+  mo <- s@methods
+  names(mo) <- mo
+  w$dataObject.names <- lapply(mo, .sdmMethods$getDataArgumentNames)
+  #-----------
+  
+  #reserved.names <- w$getReseved.names()
+  for (mo in s@methods) {
+    wc <- unlist(lapply(w$arguments$fit[[mo]]$params,function(x) is.character(x)))
+    if (any(!wc)) {
+      if (!all(unlist(lapply(w$arguments$fit[[mo]]$params[!wc],function(x) is.function(x))))) stop(paste('parameter definition for the model',m,'in the model container is not correctly defined!'))
+      for (n in names(w$arguments$fit[[mo]]$params[!wc])) {
+        #if (!all(names(formals(w$arguments$fit[[mo]]$params[[n]])) %in% reserved.names)) stop(paste('the input argument for the function generates the parameter for model',m,'is unknown (not in the reseved objects)'))
+        w$params[[sp]][[n]] <- do.call(w$arguments$fit[[mo]]$params[[n]],w$generateParams(names(formals(w$arguments$fit[[mo]]$params[[n]])),sp)) 
+        w$arguments$fit[[mo]]$params[[n]] <- n
+      }
+    }
+    
+    wc <- unlist(lapply(w$arguments$predict[[mo]]$params,function(x) is.character(x)))
+    
+    if (any(!wc)) {
+      if (!all(unlist(lapply(w$arguments$predict[[mo]]$params[!wc],function(x) is.function(x))))) stop(paste('parameter definition for the model',m,'in the model container is not correctly defined!'))
+      for (n in names(w$arguments$predict[[mo]]$params[!wc])) {
+        #if (!all(names(formals(w$arguments$predict[[mo]]$params[[n]])) %in% reserved.names)) stop(paste('the input argument for the function generates the parameter for model',m,'is unknown (not in the reseved objects)'))
+        w$params[[sp]][[n]] <- do.call(w$arguments$predict[[mo]]$params[[n]],w$generateParams(names(formals(w$arguments$predict[[mo]]$params[[n]])),sp))
+        w$arguments$predict[[mo]]$params[[n]] <- n
+      }
+    }
+  }
+  #-----------------
+  
+  if (!is.null(s@replicate)) {
+    f <- .replicateMethods$getFunctions(s@replicate)
+    for (sp in names(w$train)) {
+      if (d@species[[sp]]@type == 'Presence-Absence') family <- 'binomial'
+      else family <- 'xxx'
+      
+      # sdmDataFrame! Leter should be checked for other types of data!
+      for (ff in f) {
+        w$replicates[[sp]] <- c(w$replicates[[sp]],ff(x=w$train[[sp]][['sdmDataFrame']][,sp],family=family,stratify=TRUE,test.percent=s@test.percentage,nfolds=s@cv.folds,replicates=s@n.replicates))
+      }
+    }
+  }
+  
+  # for each replicatios, checks whether the factor level is going to be problematic
+  # if so, move the record from test to train
+  if (!is.null(nFact)) {
+    for (nF in nFact) {
+      for (sp in names(w$replicates)) {
+        for (i in 1:length(w$replicates[[sp]])) {
+          #fc <- .checkFactor(w$train[[sp]]$sdmDataFrame[w$runtasks$runIndex[[sp]][[i]]$train,nF],w$train[[sp]]$sdmDataFrame[w$runtasks$runIndex[[sp]][[i]]$test,nF])
+          fc <- .checkFactor(w$train[[sp]]$sdmDataFrame[w$replicates[[sp]][[i]]$train,nF],w$train[[sp]]$sdmDataFrame[w$replicates[[sp]][[i]]$test,nF])
+          if (!is.null(fc)) {
+            p <- names(fc$p)
+            for (j in seq_along(p)) {
+              ww <- fc[['p']][[p[[j]]]]
+              if (length(ww) > 1) ww <- sample(ww,1)
+              w$replicates[[sp]][[i]]$train <- c(w$replicates[[sp]][[i]]$train,w$replicates[[sp]][[i]]$test[ww])
+              w$replicates[[sp]][[i]]$test <- w$replicates[[sp]][[i]]$test[-ww]
+            }
+          }
         }
       }
     }
-    #for (i in seq_along(sMo)) sMo[[i]]@scenarios <- .showScenarios(runs) 
-    for (i in seq_along(sMo)) sMo[[i]]@scenarios <- runs 
-    rm(m,m2,run.ID,i,runs,e,e2)
-  } else {
-    e_sc <- data.frame(runIndex=as.integer(1),evalDependent=integer(1),evalIndependent=integer(1) )
-    for (i in seq_along(sMo)) {
-      sMo[[i]]@evaluation@model <- sMo[[i]]@model
-      sMo[[i]]@evaluation@n.run <- 1
-      sMo[[i]]@evaluation@scenarios <- e_sc
-    }
-    rm(e_sc,i)
-    m <- lapply(funs,function(f,...) try(f(d,...),silent=TRUE),s=s@settings@modelSettings)
-    if (!is.null(s@data@test)) {
-      m2 <- lapply(funsP,function(f,...) try(f(dT,...),silent=TRUE),s=s@settings@modelSettings,models=m)
-      e <- lapply(s@settings@methods,function(x) {try(.evaluate(dT[,1],m2[[x]]),silent=TRUE)})
-      e <- lapply(e,function(x) {if (inherits(x,'try-error')) NULL else x} )
-      rm(dT)
-    } else e <- NULL
-    
-    for (j in seq_along(s@settings@methods)) {
-      success <- TRUE
-      if (inherits(m[[j]], "try-error")) {
-        m[[j]] <- NA
-        success <- FALSE
-      }
-      sMo[[j]]@n.run <- as.integer(sMo[[j]]@n.run + 1)
-      sMo[[j]]@run.success[1] <- success
-      sMo[[j]]@modelObjectList[[1]] <- m[[j]]
-      sMo[[j]]@evaluation@scenarios[1,2] <- NA
-      
-      if (!is.null(e) && !is.null(e[[j]])) {
-        sMo[[j]]@evaluation@scenarios[1,3] <- length(sMo[[j]]@evaluation@evaluationList) + 1
-        sMo[[j]]@evaluation@evaluationList[[sMo[[j]]@evaluation@scenarios[1,3]]] <- e[[j]]
-      } else {
-        sMo[[j]]@evaluation@scenarios[1,3] <- NA
-      }
-    }
-    
-    #for (n in seq_along(s@settings@methods)) .updateModel(sMo) <- list(s@settings@methods[n],m,n,1,NULL,e)
-    runs <- data.frame(matrix(nrow=1,ncol=3))
-    colnames(runs) <- c('run_scenarios','fold','replicate')
-    runs[1,1] <- 'full'
-    runs[1,2:3] <- 1
-    
-    for (i in seq_along(sMo)) sMo[[i]]@scenarios <- runs 
-    rm(m,runs,j,e)
-    
   }
-  options(warn=0)
-  mMo <- new('.sdmMultiModel',species.name=s@models@species.names,modelList=sMo)
-  s@models@multiModelList[[mMo@species.name]] <- mMo
-  rm(sMo,mMo,d)
-  s
+  #-----
+  w
 }
+
+#----------------------------------------
+if (!isGeneric("sdmSetting")) {
+  setGeneric("sdmSetting", function(formula,data,methods,interaction.depth=1,n=1,replication=NULL,
+                                    cv.folds=NULL,test.percent=NULL,bg=NULL,bg.n=NULL,var.importance=NULL,response.curve=TRUE,
+                                    var.selection=FALSE,ncore=1L,...)
+    standardGeneric("sdmSetting"))
+}
+
+setMethod('sdmSetting', signature(formula='ANY','sdmdata','character'), 
+          function(formula,data,methods,interaction.depth=1,n=1,replication=NULL,
+                   cv.folds=NULL,test.percent=NULL,bg=NULL,bg.n=NULL,var.importance=NULL,response.curve=TRUE,
+                   var.selection=FALSE,ncore=1L,...) {
+            dot <- list(...)
+            sobj <- NULL
+            if (length(dot) > 0) {
+              ndot <- names(dot)
+              if ('' %in% ndot) {
+                for (i in seq_along(which(ndot == ''))) {
+                  if (inherits(dot[[i]],'.sdmCorSetting')) {
+                    sobj <- dot[[i]]
+                    break
+                  }
+                }
+                dot <- dot[-which(ndot == '')]
+                ndot <- names(dot)
+              }
+              
+              a <- c('interaction.depth','replication','cv.folds','test.percent','bg','bg.n','var.importance','response.curve','var.selection','ncore')
+              ndot <- .pmatch(ndot,a)
+              w <- !is.na(ndot)
+              if (length(w) > 0) {
+                dot <- dot[w]
+                ndot <- ndot[w]
+                names(dot) <- ndot
+              }
+              
+              
+              if ('setting' %in% names(dot) && inherits(dot[['setting']],'.sdmCorSetting')) {
+                sobj <- dot[['setting']]
+                dot <- dot[-which(ndot == 'setting')]
+                ndot <- names(dot)
+              }
+              
+              if (length(dot) > 0) {
+                if (length(ndot) > 0) {
+                  for (nd in ndot) {
+                    if (nd == 'interaction.depth' && interaction.depth == 1) interaction.depth <- dot[[nd]]
+                    else if (nd == 'ncore' && ncore == 1L) ncore <- dot[[nd]]
+                    else if (nd == 'replication' && is.null(replication)) replication <- dot[[nd]]
+                    else if (nd == 'cv.folds' && is.null(cv.folds)) cv.folds <- dot[[nd]]
+                    else if (nd == 'test.percent' && is.null(test.percent)) test.percent <- dot[[nd]]
+                    else if (nd == 'bg' && is.null(bg)) bg <- dot[[nd]]
+                    else if (nd == 'bg.n' && is.null(bg.n)) bg.n <- dot[[nd]]
+                    else if (nd == 'var.importance' && is.null(var.importance)) var.importance <- dot[[nd]]
+                    else if (nd == 'response.curve' && response.curve && is.logical(dot[[nd]])) response.curve <- dot[[nd]]
+                    else if (nd == 'var.selection' && !var.selection && is.logical(dot[[nd]])) var.selection <- dot[[nd]]
+                  }
+                }
+              }
+            }
+            #--------
+            
+            m <- .methodFix(methods)
+            if (any(is.na(m))) stop(paste('methods',paste(methods[is.na(m)],collapse=', '),'do not exist!'))
+            m <- unique(m)
+            
+            s <- new('.sdmCorSetting',methods=m)
+            s@distribution <- .getSpeciesDistribution(data)
+            
+            if (missing(formula)) {
+              if (!is.null(sobj)) {
+                if (all(sobj@sdmFormula@vars %in% data@features.name)) s@sdmFormula <- sobj@sdmFormula
+                else s@sdmFormula <- data@sdmFormula
+              } else s@sdmFormula <- data@sdmFormula
+              
+            } else if (inherits(formula,'sdmFormula')) s@sdmFormula <- formula
+            else if (inherits(formula,'formula')) {  
+              s@sdmFormula <- .exFormula(formula,as.data.frame(data)[,-1])
+            } else if (inherits(formula,'.sdmCorSetting')) {
+              sobj <- formula
+              if (all(sobj@sdmFormula@vars %in% data@features.name)) s@sdmFormula <- sobj@sdmFormula
+              else s@sdmFormula <- data@sdmFormula
+            } else {
+              if (!is.null(sobj)) {
+                if (all(sobj@sdmFormula@vars %in% data@features.name)) s@sdmFormula <- sobj@sdmFormula
+                else s@sdmFormula <- data@sdmFormula
+              } else s@sdmFormula <- data@sdmFormula
+            }
+            
+            s@featuresFrame <- .getFeaturetype(data,s@sdmFormula)  
+              
+            if (!is.null(test.percent)) s@test.percentage <- test.percent
+            else {
+              if (!is.null(sobj)) {
+                if (!is.null(sobj@test.percent)) s@test.percentage <- sobj@test.percent
+              }
+            }
+            
+            s@interaction.depth <- interaction.depth
+            if (interaction.depth ==1 && !is.null(sobj) && !is.null(sobj@interaction.depth)) s@interaction.depth <- sobj@interaction.depth
+            
+            s@ncore <- ncore
+            if (ncore == 1L && !is.null(sobj) && length(sobj@ncore) == 1) s@ncore <- sobj@ncore
+            
+            if (!is.null(replication)) {
+              nx <- .replicate.methodFix(replication)
+              if (any(is.na(nx))) warning(paste(paste(replication[is.na(nx)],collapse=', '),'methods in replication are not found [They are ignored!]'))
+              replication <- nx[!is.na(nx)]
+              s@replicate <- replication
+            } else {
+              if (!is.null(sobj)) {
+                if (!is.null(sobj@replicate)) s@replicate <- sobj@replicate
+              }
+              if (is.null(s@replicate) && !is.null(s@test.percentage)) {
+                s@replicate <- "subsampling"
+              }
+            }
+            
+            s@n.replicates <- n
+            if (!is.null(sobj) && !is.null(sobj@n.replicates)) s@n.replicates <- sobj@n.replicates
+            
+            if ("subsampling" %in% s@replicate) {
+              if (is.null(s@test.percentage)) s@test.percentage <- 30
+            }
+            
+            if (!is.null(cv.folds)) s@cv.folds <- cv.folds
+            else {
+              if (!is.null(sobj) && !is.null(sobj@cv.folds)) s@cv.folds <- sobj@cv.folds
+              if (is.null(s@cv.folds) && "cross_validation" %in% s@replicate) s@cv.folds <- 5
+            }
+            
+            if (!is.null(s@cv.folds) && !"cross_validation" %in% s@replicate) {
+              s@replicate <- c("cross_validation",s@replicate)
+            }
+            
+            if (!is.null(bg)) s@pseudo.absence.methods <- bg
+            else {
+              if (!is.null(sobj)) {
+                if (!is.null(sobj@pseudo.absence.methods)) s@pseudo.absence.methods <- sobj@pseudo.absence.methods
+              }
+            }
+            if (!is.null(bg.n)) s@n.pseudo.absence <- bg.n
+            else {
+              if (!is.null(sobj)) {
+                if (!is.null(sobj@n.pseudo.absence)) s@n.pseudo.absence <- sobj@n.pseudo.absence
+              }
+              if (is.null(s@n.pseudo.absence) && !is.null(s@pseudo.absence.methods)) {
+                s@n.pseudo.absence <- 1000
+              }
+            }
+            if (!is.null(var.importance)) s@varImportance.methods <- var.importance
+            else {
+              if (!is.null(sobj)) {
+                if (!is.null(sobj@varImportance.methods)) s@varImportance.methods <- sobj@varImportance.methods
+              }
+            }
+            if (response.curve) s@response.curve <- TRUE
+            else {
+              if (!is.null(sobj)) {
+                if (!is.null(sobj@response.curve) && sobj@response.curve) s@response.curve <- sobj@response.curve
+              } else s@response.curve <- FALSE
+            }
+            
+            if (var.selection) s@var.selection <- TRUE
+            else {
+              if (!is.null(sobj)) {
+                if (!is.null(sobj@var.selection) && sobj@var.selection) s@var.selection <- sobj@var.selection
+              } else s@var.selection <- FALSE
+            }
+            
+            if (!is.null(interaction.depth)) s@interaction.depth <- interaction.depth
+            else {
+              if (!is.null(sobj)) {
+                if (!is.null(sobj@interaction.depth)) s@interaction.depth <- sobj@interaction.depth
+              }
+            }
+            s
+          }
+)
 #----------------
 if (!isGeneric("sdm")) {
   setGeneric("sdm", function(formula,data,methods,...)
     standardGeneric("sdm"))
 }
 
-setMethod('sdm', signature(formula='formula',data='singleSpecies',methods='character'), 
+setMethod('sdm', signature(formula='formula',data='sdmdata',methods='character'), 
           function(formula,data,methods,...) {
-            methods <- unique(.methodFix(methods))
-            lib <- unlist(lapply(methods,.loadLib))
-            if (!any(lib)) stop('the required packages for the specified methods are not installed...!')
-            w <- which(!lib)
-            if (length(w) > 0) {
-              warning(paste('the package for methods',paste(methods[!w],collapse=', '),'are not found. These methods are ignored! After installing the required packages, you can use update function to update the sdm model with specific methods'))
-              methods <- methods[w]
+            a <- c('interaction.depth','n','replication','cv.folds','test.percent','bg','bg.n','var.importance','response.curve','var.selection','setting','ncore')
+            dot <- list(...)
+            ndot <- names(dot)
+            if (length(ndot) > 0) {
+              ndot <- .pmatch(ndot,a)
+              w <- !is.na(ndot)
+              ndot <- ndot[w]
+              dot <- dot[w]
+              names(dot) <- ndot
             }
-            p <- list(...)
-            n <- names(p)
-            n <- .paramFix(n)
-            names(p) <- n
-            p <- .paramCheck(p)
-            p$data <- data
-            p$formula <- formula
-            p$methods <- methods
-            s <- do.call('sdmSetting',p)
-            s <- .sdmFit(data,s)
-            rm(data)
-            s
+            
+            dot$data <- data
+            dot$formula <- formula
+            dot$methods <- methods
+            s <- do.call('sdmSetting',dot)
+            w <- .generateWL(data,s)
+            w <- w$fit()
+            if (".sdmMethods$userFunctions" %in% search()) detach('.sdmMethods$userFunctions')
+            w
           }
 )
 
-#################
-
-setMethod('sdm', signature(formula='ANY',data='singleSpecies',methods='sdmSettings'), 
-          function(formula,data,methods,...) {
-            s <- methods
-            methods <- s@methods
-            lib <- unlist(lapply(methods,.loadLib))
-            if (!any(lib)) stop('the required packages for the specified methods are not installed...!')
-            w <- which(!lib)
-            if (length(w) > 0) {
-              warning(paste('the package for methods',paste(methods[!w],collapse=', '),'are not found. These methods are ignored! After installing the required packages, you can use update function to update the sdm model with specific methods'))
-              methods <- methods[w]
-              s@methods <- methods
-              s@modelSettings <- s@modelSettings[w]
-            }
-            s <- .sdmFit(data,s)
-            rm(data)
-            s
+#-------------
+.getModel.info <- function(x,w,...) {
+  if (missing(w) || is.null(w)) {
+    a <- c('species','method','replication','run')
+    w1 <- w2 <- w3 <- w4 <- TRUE
+    dot <- list(...)
+    if (length(dot) > 0) {
+      ndot <- names(dot)
+      ndot <- .pmatch(ndot,a)
+      w <- !is.na(ndot)
+      ndot <- ndot[w]
+      dot <- dot[w]
+      names(dot) <- ndot
+      for (nd in ndot) {
+        if (nd == 'species' && !is.null(dot[[nd]])) {
+          dot[[nd]] <- .pmatch(dot[[nd]],unique(as.character(x@run.info[,2])))
+          w1 <- x@run.info[,2] %in% dot[[nd]]
+        } else if (nd == 'method' && !is.null(dot[[nd]])) {
+          dot[[nd]] <- .methodFix(dot[[nd]])
+          w2 <- x@run.info[,3] %in% dot[[nd]]
+        }
+        else if (nd == 'replication' && !is.null(dot[[nd]])) {
+          if (length(x@replicates) != 0) {
+            dot[[nd]] <- .replicate.methodFix(dot[[nd]])
+            w3 <- x@run.info[,4] %in% dot[[nd]]
           }
-)
+        } else if (nd == 'run' && !is.null(dot[[nd]])) {
+          if (!is.null(dot[[nd]])) {
+            if (length(x@replicates) != 0) {
+              r <- unlist(lapply(x@replicates[[1]],function(x) x$method))
+              ru <- unique(r)
+              names(ru) <- ru
+              rID <- lapply(ru,function(x) which(r == x))
+              w4 <- c()
+              for (i in 1:length(rID)) {
+                w4 <- c(w4,rID[[i]][c(1:length(rID[[i]])) %in% dot[[nd]]])
+              }
+              w4 <- x@run.info[,5] %in% w4
+            }
+          }
+        }
+      }
+      x@run.info[w1 & w2 & w3 & w4,]
+    } else x@run.info
+  } else x@run.info[x@run.info[,1] %in% w,]
+}
+#--------
 
 
-#---------------------------
+.getModel.info2 <- function(x,w=NULL,species=NULL,method=NULL,replication=NULL,run=NULL,wtest=NULL) {
+  # comparing to .getModel.info: In this, only one species is allowed!
+  # x: sdmModels
+  if (!is.null(w)) {
+    mi <- .getModel.info(x,w)
+  } else {
+    mi <- .getModel.info(x)
+    u <- as.character(unique(mi[,2]))
+    m <- as.character(unique(mi[,3]))
+    r <- unique(mi[,4])
+    if (!is.null(species)) {
+      if (length(species) > 1) {
+        species <- species[1]
+        warning('only the first species is considered!')
+      }
+      if (is.numeric(species)) {
+        if (length(u) <= species) species <- u[species]
+        else stop('The specified species is not recognised!')
+      } else {
+        species <- .pmatch(species,u)
+        if (is.na(species)) stop('The specified species is not recognised!')
+      }
+    } else {
+      if (length(u) > 1) stop('This object contains models for more than one species; in species argument spcify the name of species!')
+      else species <- u
+    }
+    
+    if (!is.null(method)) {
+      method <- .sdmMethods$fixNames(method)
+      wm <- method %in% m
+      if (any(!wm)) {
+        if (all(!wm)) stop('the specified methods do not exist in the object!')
+        warning(paste('Methods',paste(method[!wm],collapse=', '),'do not exsit in the object, and are excluded!'))
+        method <- method[wm]
+      }
+    } else method <- m
+    
+    if (!is.null(replication)) replication <- .replicate.methodFix(replication)
+    else replication <- r
+    
+    mi <- .getModel.info(x,species=species,method=method,replication=replication,run=run)
+  }
+  
+  mi
+}
+#---------

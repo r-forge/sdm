@@ -27,7 +27,7 @@ evaluates the accuracy
 }
 
 \references{
-#
+Naimi, B., Araújo, M.B. (2016) sdm: a reproducible and extensible R platform for species distribution modelling, Ecography, DOI: 10.1111/ecog.01881
 }
 
 \author{Babak Naimi \email{naimi.b@gmail.com}
