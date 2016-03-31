@@ -36,7 +36,8 @@ sdmData can automatically detect the variables contain species data (if train is
  an object of class \code{singleSpecies} or \code{multipleSpecies} or \code{SpeciesDataList}
 }
 
-\references{#
+\references{
+Naimi, B., Araújo, M.B. (2016) sdm: a reproducible and extensible R platform for species distribution modelling, Ecography, DOI: 10.1111/ecog.01881
 }
 
 \author{Babak Naimi \email{naimi.b@gmail.com}

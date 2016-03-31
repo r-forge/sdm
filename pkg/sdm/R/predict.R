@@ -113,6 +113,7 @@ if (!isGeneric("predict")) {
   
   mi <- .getModel.info(x,w=w,species=species,method=method,replication=replication,run=run)
   
+  
   s <- mi$success
   
   if (!all(s)) {
@@ -245,11 +246,11 @@ if (!isGeneric("predict")) {
   w$runTasks$species <- as.character(w$runTasks$species)
   w$runTasks$method <- as.character(w$runTasks$method)
   sp <- as.character(mi[,2])
-  nw <- names(x@models)
+  nw <- unique(sp)
   w$runTasks$speciesID <- unlist(lapply(sp,function(x) {which(nw == x)}))
   
   m <- as.character(mi[,3])
-  nw <- names(x@models[[1]])
+  nw <- names(w$funs)
   w$runTasks$methodID <- unlist(lapply(m,function(x) {which(nw == x)}))
   w$runTasks$mIDChar <- as.character(mi[,1])
   w
@@ -260,12 +261,31 @@ setMethod('predict', signature(object='sdmModels'),
           function(object, newdata, filename="",w=NULL,species=NULL,method=NULL,replication=NULL,run=NULL,mean=FALSE,control=NULL,overwrite=FALSE,nc=1L,obj.size=1,err=FALSE,...) {
             if (missing(newdata)) stop('mewdata is missing...')
             
-            #a <- c('species','method','replication','run','w','mean','control','owerwrite')
-            #dot <- list(...)
-            #ndot <- names(dot)
+            if (missing(method) || is.null(method)) method <- object@setting@methods
+            pkgs <- .sdmMethods$getPakagNames(method)
+            
+            for (i in seq_along(pkgs)) {
+              if ('.temp' %in% pkgs[[i]]) {
+                if (!".sdmMethods$userFunctions" %in% search()) attach(.sdmMethods$userFunctions)
+                pkgs[[i]] <- pkgs[[i]][-which(pkgs[[i]] == '.temp')]
+              }
+            }
+            
+            ww <- .loadLib(pkgs)
+            if (!all(ww)) {
+              if (!any(ww)) {
+                stop(paste('There is no installed packages rquired by the selected methods. Package names:',paste(unlist(pkgs),collapse=', ')))
+              } else {
+                warning(paste('There is no installed packages rquired by the methods:',paste(s@methods[!ww],collapse=', '),'; These methods are excluded! The packages need to be installed for these methods:',paste(unlist(pkgs[!ww]),collapse=', ')))
+                method <- method[ww]
+              }
+            }
+            
+            
             b <- NULL
             w <- .generateWLP(x = object,newdata=newdata,w=w,species=species,method=method,replication=replication,run=run,ncore=nc)
             #w <- sdm:::.generateWLP(x = object,newdata=newdata,w=NULL,species=NULL,method=NULL,replication=NULL,run=NULL,ncore=1)
+            #w <- sdm:::.generateWLP(x = object,newdata=newdata,w=NULL,species=NULL,method='fda',replication=NULL,run=NULL,ncore=1)
             
             if (!is.null(w$newdata$raster)) {
               if (filename == '') filename <- .generateName('sdm_prediction')
@@ -472,6 +492,8 @@ setMethod('predict', signature(object='sdmModels'),
             if (err && length(errLog) > 0) {
               for (i in seq_along(errLog)) cat(errLog[[i]],'\n')
             }
+            
+            if (".sdmMethods$userFunctions" %in% search()) detach('.sdmMethods$userFunctions')
             
             if (!inherits(b,'Raster')) {
               colnames(mtx) <- rnames

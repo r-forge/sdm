@@ -44,7 +44,7 @@ a list including data (a data.frame or a RasterStack depending on the type of x)
 
 
 \examples{
-filename <- system.file('external/preds.grd',package='sdm')
+filename <- system.file('external/preds.grd',package='sdmo')
 
 r <- brick(filename)
 

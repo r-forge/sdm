@@ -580,6 +580,7 @@ setRefClass('.sdmMethodsContainer',
               },
               #---
               getPakagNames=function(m=getMethodNames()) {
+                for (i in seq_along(m)) m[i] <- .self$whichMethod(m[i])
                 names(m) <- m
                 lapply(m,function(x) {.self$Methods[[x]]@packages})
               },
@@ -1247,12 +1248,12 @@ setRefClass(".workloadP",
                 options(warn=-1)
                 i <- which(.self$runTasks$modelID == i)
                 p <- .self$getPredictArgs(.self$runTasks$species[i],.self$runTasks$method[i])
-                p[[1]] <- .self$obj[[.self$runTasks$speciesID[i]]][[.self$runTasks$methodID[i]]][[.self$runTasks$mIDChar[i]]]@object
+                p[[1]] <- .self$obj[[.self$runTasks$species[i]]][[.self$runTasks$method[i]]][[.self$runTasks$mIDChar[i]]]@object
                 
                 if (is.null(.self$modelFrame$specis_specific)) p[[2]] <- .self$modelFrame$features
                 else p[[2]] <- cbind(.self$modelFrame$features,.self$modelFrame$specis_specific[[.self$runTasks$species[i]]])
                 
-                m <- try(.self$funs[[.self$runTasks$methodID[i]]](p),silent=TRUE)
+                m <- try(.self$funs[[.self$runTasks$method[i]]](p),silent=TRUE)
                 options(warn=0)
                 m
               },

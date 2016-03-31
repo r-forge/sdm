@@ -43,7 +43,7 @@ ensemble function uses the fitted models in the sdmModel to generate the predict
 \seealso{# }
 
 \examples{
-# filename <- system.file('external/preds.grd',packages='sdm')
+# filename <- system.file('external/preds.grd',packages='sdmo')
 
 # r <- brick(filename)
 # s <- shapefile('pkg/sdm/inst/external/species.shp')

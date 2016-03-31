@@ -1,9 +1,10 @@
-import("raster","methods","sp")
+import(sp,methods)
 importFrom("graphics", "abline", "legend", "par", "points")
 importFrom("stats", "as.formula", "cor", "cov", "formula", "glm",
              "mahalanobis", "predict.glm", "supsmu", "terms",
              "wilcox.test","princomp")
 importFrom("utils", "combn", "data", "read.csv")
-exportClasses(sdmdata, sdmFormula,sdmEvaluates)
-exportMethods(sdmData,sdm,sdmSetting,evaluates,roc,getRoc,thresholds)
+importFrom("raster",  "raster", "brick","cellFromXY","ncell","trim","extract","extent","as.data.frame","predict")
+exportClasses(sdmdata, sdmFormula,sdmEvaluate)
+exportMethods(sdmData,sdm,sdmSetting,evaluates,roc,getRoc)
 exportPattern("^[^\\.]")
