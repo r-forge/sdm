@@ -40,6 +40,7 @@ Naimi, B., Araújo, M.B. (2016) sdm: a reproducible and extensible R platform fo
 \seealso{# }
 
 \examples{
+\dontrun{
 file <- system.file("external/pa_df.csv", package="sdm")
 df <- read.csv(file)
 head(df) 
@@ -72,7 +73,7 @@ m <- sdm(sp~.,data=d,methods=c('gbm','tree','mars','mda','fda'),replication=c('c
 
 m
 
-
+}
 
 }
 

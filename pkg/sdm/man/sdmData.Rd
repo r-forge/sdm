@@ -50,7 +50,7 @@ Naimi, B., Araújo, M.B. (2016) sdm: a reproducible and extensible R platform fo
 \seealso{ #}
 
 \examples{
-
+\dontrun{
 # Example 1: a data.frame containing records for a species (sp) and two predictors (b15 & NDVI):
 file <- system.file("external/pa_df.csv", package="sdm")
 df <- read.csv(file)
@@ -176,7 +176,7 @@ d <- sdmData(sp4~b15+NDVI,train=po,predictors = r,bg=list(n=1000,method='gRandom
 d # as you see in the type, the data is Presence-Background
 
 # you can alternatively, put a data.frame including background records in bg!
-
+}
 }
 
 \keyword{spatial,species,data}

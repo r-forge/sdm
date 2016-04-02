@@ -314,6 +314,7 @@
       #e <- .sdmMethods$userFunctions
       #.movEnv2sdm(e)
       if (!".sdmMethods$userFunctions" %in% search()) attach(.sdmMethods$userFunctions)
+      on.exit(substitute(if (".sdmMethods$userFunctions" %in% search()) detach('.sdmMethods$userFunctions')))
       pkgs[[i]] <- pkgs[[i]][-which(pkgs[[i]] == '.temp')]
     }
   }
@@ -394,7 +395,7 @@
   for (mo in s@methods) {
     wc <- unlist(lapply(w$arguments$fit[[mo]]$params,function(x) is.character(x)))
     if (any(!wc)) {
-      if (!all(unlist(lapply(w$arguments$fit[[mo]]$params[!wc],function(x) is.function(x))))) stop(paste('parameter definition for the model',m,'in the model container is not correctly defined!'))
+      if (!all(unlist(lapply(w$arguments$fit[[mo]]$params[!wc],function(x) is.function(x))))) stop(paste('parameter definition for the model',mo,'in the model container is not correctly defined!'))
       for (n in names(w$arguments$fit[[mo]]$params[!wc])) {
         #if (!all(names(formals(w$arguments$fit[[mo]]$params[[n]])) %in% reserved.names)) stop(paste('the input argument for the function generates the parameter for model',m,'is unknown (not in the reseved objects)'))
         w$params[[sp]][[n]] <- do.call(w$arguments$fit[[mo]]$params[[n]],w$generateParams(names(formals(w$arguments$fit[[mo]]$params[[n]])),sp)) 
@@ -405,7 +406,7 @@
     wc <- unlist(lapply(w$arguments$predict[[mo]]$params,function(x) is.character(x)))
     
     if (any(!wc)) {
-      if (!all(unlist(lapply(w$arguments$predict[[mo]]$params[!wc],function(x) is.function(x))))) stop(paste('parameter definition for the model',m,'in the model container is not correctly defined!'))
+      if (!all(unlist(lapply(w$arguments$predict[[mo]]$params[!wc],function(x) is.function(x))))) stop(paste('parameter definition for the model',mo,'in the model container is not correctly defined!'))
       for (n in names(w$arguments$predict[[mo]]$params[!wc])) {
         #if (!all(names(formals(w$arguments$predict[[mo]]$params[[n]])) %in% reserved.names)) stop(paste('the input argument for the function generates the parameter for model',m,'is unknown (not in the reseved objects)'))
         w$params[[sp]][[n]] <- do.call(w$arguments$predict[[mo]]$params[[n]],w$generateParams(names(formals(w$arguments$predict[[mo]]$params[[n]])),sp))
@@ -465,6 +466,9 @@ setMethod('sdmSetting', signature(formula='ANY','sdmdata','character'),
           function(formula,data,methods,interaction.depth=1,n=1,replication=NULL,
                    cv.folds=NULL,test.percent=NULL,bg=NULL,bg.n=NULL,var.importance=NULL,response.curve=TRUE,
                    var.selection=FALSE,ncore=1L,...) {
+            
+            if (!.sdmOptions$getOption('sdmLoaded')) .addMethods()
+            
             dot <- list(...)
             sobj <- NULL
             if (length(dot) > 0) {
@@ -654,6 +658,9 @@ setMethod('sdm', signature(formula='formula',data='sdmdata',methods='character')
             dot$data <- data
             dot$formula <- formula
             dot$methods <- methods
+            
+            if (!.sdmOptions$getOption('sdmLoaded')) .addMethods()
+            
             s <- do.call('sdmSetting',dot)
             w <- .generateWL(data,s)
             w <- w$fit()

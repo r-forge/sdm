@@ -4,7 +4,8 @@ importFrom("stats", "as.formula", "cor", "cov", "formula", "glm",
              "mahalanobis", "predict.glm", "supsmu", "terms",
              "wilcox.test","princomp")
 importFrom("utils", "combn", "data", "read.csv")
-importFrom("raster",  "raster", "brick","cellFromXY","ncell","trim","extract","extent","as.data.frame","predict")
-exportClasses(sdmdata, sdmFormula,sdmEvaluate)
-exportMethods(sdmData,sdm,sdmSetting,evaluates,roc,getRoc)
+importFrom("raster",  "raster", "brick","cellFromXY","ncell","trim","extract","extent","as.data.frame","predict",
+           "values","sampleRandom","extension","addLayer","calc","setZ","writeRaster")
+exportClasses(sdmdata, sdmFormula,sdmEvaluate,sdmCorrelativeMethod,sdmModel)
+exportMethods('add', 'sdmData','sdm','sdmSetting','evaluates','roc','getRoc','getmethodNames','getmethod')
 exportPattern("^[^\\.]")

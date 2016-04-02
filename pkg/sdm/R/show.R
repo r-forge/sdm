@@ -140,13 +140,15 @@ setMethod ('show' , 'sdmModels',
                w1 <- mi$species == sp
                w2 <- mi$method == x
                id <- mi$modelID[w1 & w2 & mi$success]
-               o <- ._getPerformance(object,id,wtest = NULL,s1=c('AUC','COR','Deviance'),s2='TSS',opt = 2)
-               a <- mean(sapply(o,function(x) x$AUC),na.rm=TRUE)
-               a <- c(a,mean(sapply(o,function(x) x$COR),na.rm=TRUE))
-               a <- c(a,mean(sapply(o,function(x) x$TSS),na.rm=TRUE))
-               a <- c(a,mean(sapply(o,function(x) x$Deviance),na.rm=TRUE))
-               a <- round(a,2)
-               a <- as.character(a)
+               if (length(id) > 0) {
+                 o <- ._getPerformance(object,id,wtest = NULL,s1=c('AUC','COR','Deviance'),s2='TSS',opt = 2)
+                 a <- mean(sapply(o,function(x) x$AUC),na.rm=TRUE)
+                 a <- c(a,mean(sapply(o,function(x) x$COR),na.rm=TRUE))
+                 a <- c(a,mean(sapply(o,function(x) x$TSS),na.rm=TRUE))
+                 a <- c(a,mean(sapply(o,function(x) x$Deviance),na.rm=TRUE))
+                 a <- round(a,2)
+                 a <- as.character(a)
+               } else a <- as.character(c(NA,NA,NA,NA))
                b <- c()
                for (i in a) b <- c(b,paste(i,paste(rep(' ',7 - length(unlist(strsplit(i,'')))),collapse=''),collapse=''))
                paste(b,collapse='|     ')

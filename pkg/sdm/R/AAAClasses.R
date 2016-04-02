@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date :  April 2015
-# Version 3.0
+# Date :  April 2016
+# Version 3.1
 # Licence GPL v3
 
 
@@ -843,7 +843,10 @@ setRefClass(".workload",
                   # temporary until the HPC for windows is implemented:
                   if (.is.windows()) nc <- 1L
                 }
-                #----
+                #####################-----------
+                # temporary solution until the problem of rJava and mclparallel is fixed!!
+                if ('maxent' %in% models) nc <- 1L
+                #----####################
                 sm <- new('sdmModels',replicates=.self$replicates,data=.self$data,setting=.self$setting,recordIDs=.self$recordIDs)
                 
                 sm@run.info <- data.frame(matrix(NA,ncol=9,nrow=n.total))
@@ -977,7 +980,7 @@ setRefClass(".workload",
                 #---- update the run.info with whether the fitting and evaluations were successfully done!
                 for (i in sm@run.info[,1]) {
                   o <- sm@models[[sm@run.info[i,2]]][[sm@run.info[i,3]]][[as.character(i)]]
-                  sm@run.info[i,6:9] <- c(!inherits(o@object,"try-error"),inherits(o@evaluation[['training']],"sdmEvaluate"),inherits(o@evaluation[['test.dep']],"sdmEvaluate"),inherits(o@evaluation[['test.indep']],"sdmEvaluate"))
+                  sm@run.info[i,6:9] <- c(!is.null(o@object) && !inherits(o@object,"try-error"),inherits(o@evaluation[['training']],"sdmEvaluate"),inherits(o@evaluation[['test.dep']],"sdmEvaluate"),inherits(o@evaluation[['test.indep']],"sdmEvaluate"))
                 }
                 sm
               },
@@ -1338,3 +1341,26 @@ setClass(".maxlikeModel",
 )
 
 #----------
+
+setRefClass(".sdmOptions",
+            fields=list(
+              options='list'
+            ),
+            methods=list(
+              addOption=function(n,v) {
+                .self$options[[n]] <- v
+              },
+              getOption=function(n) {
+                .self$options[[n]]
+              },
+              getOptions=function() {
+                .self$options
+              },
+              deleteOption=function(n) {
+                if (n %in% names(.self$options)) {
+                  .self$options <- .self$options[names(.self$options) != n]
+                }
+              }
+            )
+)
+.sdmOptions <- new('.sdmOptions')

@@ -2,21 +2,21 @@
 # Date :  Feb. 2014
 # Version 2.0
 # Licence GPL v3
-
-.raster2data.table <- function(r) {
-  if (inherits(r,'RasterBrick'))  {
-    o <- data.table(r@data@values)
-    o$cellnr <- 1:ncell(r)
-  } else if (inherits(r,'RasterLayer')) {
-    o <- data.table(r@data@values)
-    colnames(o) <- names(r)
-    o$cellnr <- 1:ncell(r)
-  } else {
-    o <- data.table(as.data.frame(r))
-    o$cellnr <- 1:ncell(r)
-  }
-  o
-}
+# 
+# .raster2data.table <- function(r) {
+#   if (inherits(r,'RasterBrick'))  {
+#     o <- data.table(r@data@values)
+#     o$cellnr <- 1:ncell(r)
+#   } else if (inherits(r,'RasterLayer')) {
+#     o <- data.table(r@data@values)
+#     colnames(o) <- names(r)
+#     o$cellnr <- 1:ncell(r)
+#   } else {
+#     o <- data.table(as.data.frame(r))
+#     o$cellnr <- 1:ncell(r)
+#   }
+#   o
+# }
 #---------
 
 .getlevels <- function(x) {
@@ -260,13 +260,16 @@ if (!isGeneric("predict")) {
 setMethod('predict', signature(object='sdmModels'), 
           function(object, newdata, filename="",w=NULL,species=NULL,method=NULL,replication=NULL,run=NULL,mean=FALSE,control=NULL,overwrite=FALSE,nc=1L,obj.size=1,err=FALSE,...) {
             if (missing(newdata)) stop('mewdata is missing...')
-            
+            #---
+            if (!.sdmOptions$getOption('sdmLoaded')) .addMethods()
+            #---
             if (missing(method) || is.null(method)) method <- object@setting@methods
             pkgs <- .sdmMethods$getPakagNames(method)
             
             for (i in seq_along(pkgs)) {
               if ('.temp' %in% pkgs[[i]]) {
                 if (!".sdmMethods$userFunctions" %in% search()) attach(.sdmMethods$userFunctions)
+                on.exit(substitute(if (".sdmMethods$userFunctions" %in% search()) detach('.sdmMethods$userFunctions')))
                 pkgs[[i]] <- pkgs[[i]][-which(pkgs[[i]] == '.temp')]
               }
             }
@@ -276,8 +279,8 @@ setMethod('predict', signature(object='sdmModels'),
               if (!any(ww)) {
                 stop(paste('There is no installed packages rquired by the selected methods. Package names:',paste(unlist(pkgs),collapse=', ')))
               } else {
-                warning(paste('There is no installed packages rquired by the methods:',paste(s@methods[!ww],collapse=', '),'; These methods are excluded! The packages need to be installed for these methods:',paste(unlist(pkgs[!ww]),collapse=', ')))
-                method <- method[ww]
+                warning(paste('There is no installed packages rquired by the methods:',paste(object@setting@methods[!ww],collapse=', '),'; These methods are excluded! The packages need to be installed for these methods:',paste(unlist(pkgs[!ww]),collapse=', ')))
+                method <- method[ww] 
               }
             }
             
@@ -493,7 +496,7 @@ setMethod('predict', signature(object='sdmModels'),
               for (i in seq_along(errLog)) cat(errLog[[i]],'\n')
             }
             
-            if (".sdmMethods$userFunctions" %in% search()) detach('.sdmMethods$userFunctions')
+            #if (".sdmMethods$userFunctions" %in% search()) detach('.sdmMethods$userFunctions')
             
             if (!inherits(b,'Raster')) {
               colnames(mtx) <- rnames

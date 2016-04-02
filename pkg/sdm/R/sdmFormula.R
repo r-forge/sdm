@@ -257,27 +257,53 @@
   }
   return(v1[length(tl)+1])
 }
+#-----
 
+.LD2 <- function(s,t) {
+  sl <- unlist(strsplit(s,''))
+  tl <- unlist(strsplit(t,''))
+  xx <- c(length(sl),length(tl))
+  xx <- min(xx)/max(xx)
+  if (s == t) return(0)
+  else if (length(sl) == 0) return(length(tl))
+  else if (length(tl) == 0) return(length(sl))
+  v0 <- 0:length(tl)
+  v1 <- rep(NA,length(tl)+1)
+  for (i in seq_along(sl)) {
+    v1[1] <- i
+    for (j in seq_along(tl)) {
+      if (sl[i] == tl[j]) cost <- 0
+      else cost <- 1
+      v1[j+1] <- min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost)
+    }
+    for (j in seq_along(v0)) {
+      v0[j] <- v1[j]
+    }
+  }
+  return(v1[length(tl)+1]*xx)
+}
 #------
 .pmatch <- function(n,choices) {
   for (i in seq_along(n)) {
     if (n[i] != '') {
       if (!n[i] %in% choices) {
-        u <- try(match.arg(n[i],choices),silent=TRUE)
-        if (!inherits(u,"try-error")) n[i] <- u
-        else {
+        u <- try(match.arg(tolower(n[i]),tolower(choices)),silent=TRUE)
+        if (!inherits(u,"try-error")) {
+          n[i] <- choices[which(tolower(choices) == u)]
+        } else {
           u <- unlist(strsplit(n[i],''))
           w1 <- which(unlist(lapply(choices,function(x) tolower(strsplit(x,'')[[1]][1]) == tolower(u[1]))))
           w2 <- unlist(lapply(choices,function(x)  length(which(tolower(u) %in% tolower(strsplit(x,'')[[1]])))/length(u)))
-          w4 <- unlist(lapply(choices,function(x)  .LD(n[i],x)))
+          w4 <- unlist(lapply(choices,function(x)  .LD2(n[i],x)))
           w3 <- which(w2 > 0.5)
           if (length(w1) > 0) {
             if (length(w3) > 0) {
               w <- w1[w1 %in% w3]
               if (length(w) > 1) {
-                ww4 <- which.min(w4)
-                w <- w[w %in% ww4]
-                n[i] <- choices[w[1]]
+                w <- w[which(w2[w] == max(w2))]
+                if (length(w) == 1) n[i] <- choices[w]
+                else if (length(w1) == 1 && w2[w1] > 0.2) n[i] <- choices[w1]
+                else n[i] <- NA
               } else if (length(w) == 1) {
                 n[i] <- choices[w]
               } else {
@@ -312,7 +338,7 @@
       if (length(ww) == 1) n[w] <- choices[ww]
     }
   }
-  if (length(unique(n)) < length(n)) stop('repeated arguments!')
+  #if (length(unique(n)) < length(n)) stop('repeated arguments!')
   n
 }
 

@@ -25,19 +25,19 @@
 
 
 #-------
-.getFeature.hinge <- function(x,threshold,increasing) {
+.getFeature.hinge <- function(x,th,increasing) {
   if (increasing) {
-    .hinge(x,threshold)
+    .hinge(x,th)
   } else {
-    .invhinge(x,threshold)
+    .invhinge(x,th)
   }
 }
 #-------
-.getFeature.threshold <- function(x,threshold,increasing) {
+.getFeature.threshold <- function(x,th,increasing) {
   if (increasing) {
-    .thresh(x,threshold)
+    .thresh(x,th)
   } else {
-    .invthresh(x,threshold)
+    .invthresh(x,th)
   }
 }
 

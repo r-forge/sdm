@@ -122,14 +122,17 @@
 .getTimeIndex <- function(d,t=NULL) {
   if (!is.null(t)) {
     id <- c()
-    for (gg in g) {
+    #g <- d@groups
+    #d@groups$training@values
+    #sdm:::.getGroupNames(d)
+    for (gg in t) {
       gl <- unlist(lapply(unlist(strsplit(gg,':')),.trim))
       if (length(gl) > 1) {
         if (!gl[1] %in% .getGroupNames(d)) stop(paste('group',gl[1],'does not exist!'))
         if (!gl[2] %in% .getGroupNames(d,TRUE)) stop(paste('group level',gl[2],'does not exist!'))
         id <- c(id,d@groups[[gl[1]]]@indices[[gl[2]]])
       } else {
-        if (!gl %in% c(.getGroupNames(d),getGroupNames(d,TRUE))) stop(paste(gl,' is neither a group nor a group level!'))
+        if (!gl %in% c(.getGroupNames(d),.getGroupNames(d,TRUE))) stop(paste(gl,' is neither a group nor a group level!'))
         if (gl %in% .getGroupNames(d)) {
           for (gv in d@groups[[gl]]@values[,2]) id <- c(id,d@groups[[gl]]@indices[[gv]])
         } else {
@@ -186,7 +189,7 @@
   } else if (type %in% c('q','quad','quadratic')) {
     .getFeature.quad(d@features[rid,n])
   } else if (type %in% c('c','cub','cubic')) {
-    .getFeature.cubic(.self$features[rid,n])
+    .getFeature.cubic(d$features[rid,n])
   } else if (type %in% c('poly')) {
     if ('degree' %in% names(dot)) degree <- dot[['degree']]
     else degree <- 3
@@ -210,7 +213,8 @@
         } else s <- 1
       }
       s <- d@species.names[s]
-      .getFeature.hinge(d@features[rid,n],y=.getSpecies(d,sp=s,id=id)[[1]]$value)
+      hP <- .getHingeParams(d@features[rid,n],y=.getSpeciesDF(d,sp=s,id=id)[[1]]$value)
+      .getFeature.hinge(d@features[rid,n],increasing=hP$increasing,th=hP$threshold)
     } else .getFeature.hinge(d@features[rid,n],th=th)
     
   } else if (type %in% c('th','threshold')) {
@@ -228,7 +232,8 @@
         } else s <- 1
       }
       s <- d@species.names[s]
-      .getFeature.threshold(d@features[rid,n],y=.getSpecies(d,sp=s,id=id)[[1]]$value)
+      thP <- .getThresholdParams(d@features[rid,n],y=.getSpeciesDF(d,sp=s,id=id)[[1]]$value)
+      .getFeature.threshold(d@features[rid,n],th=thP$threshold,increasing=thP$increasing)
     } else .getFeature.threshold(d@features[rid,n],th=th)
     
     
@@ -957,6 +962,9 @@ setMethod('sdmData', signature(train='data.frame',predictors='missing'),
             if(missing(crs)) crs <- NULL
             if(missing(formula)) formula <- NULL
             if(missing(bg)) bg <- NULL
+            #---
+            if (!.sdmOptions$getOption('sdmLoaded')) .addMethods()
+            #---
             dot <- list(...)
             n <- tolower(names(dot))
             for (i in seq_along(n)) {
@@ -1012,6 +1020,10 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='missing'),
             if(missing(filename)) filename <- NULL
             if(missing(crs)) crs <- NULL
             if(missing(bg)) bg <- NULL
+            
+            #---
+            if (!.sdmOptions$getOption('sdmLoaded')) .addMethods()
+            #---
             
             nxy <- coordnames(train)
             
@@ -1085,6 +1097,9 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='Raster'),
             if(missing(filename)) filename <- NULL
             if(missing(crs)) crs <- NULL
             if(missing(bg)) bg <- NULL
+            #---
+            if (!.sdmOptions$getOption('sdmLoaded')) .addMethods()
+            #---
             testc <- as.character(class(test))
             trainc <- as.character(class(train))
             

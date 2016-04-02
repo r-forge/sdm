@@ -27,7 +27,7 @@
       if (length(x@species[[sp]]@presence) == 0) {
         x@species[[sp]]@type <- ''
         x@species[[sp]]@presence <- NULL
-        if (is.null(background)) warning('no records remained!')
+        if (is.null(x@species[[sp]]@background)) warning('no records remained!')
       }
     } else if (x@species[[sp]]@type %in% c('Abundance','Abundance-constant!')) {
       w <- which(x@species[[sp]]@abundance$rID %in% id)
@@ -43,7 +43,7 @@
       if (length(x@species[[sp]]@absence) == 0) {
         x@species[[sp]]@type <- ''
         x@species[[sp]]@absence <- NULL
-        if (is.null(background)) warning('no records remained!')
+        if (is.null(x@species[[sp]]@background)) warning('no records remained!')
       }
     } else if (x@species[[sp]]@type == 'Multinomial') {
       w <- which(x@species[[sp]]@Multinomial$rID %in% id)
