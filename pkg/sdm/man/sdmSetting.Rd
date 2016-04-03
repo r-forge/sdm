@@ -1,32 +1,37 @@
 \name{sdmSetting}
 
 \alias{sdmSetting}
-\alias{sdmSetting<-}
-\alias{glmSetting}
-\alias{sdmSetting,missing,speciesData,character-method}
-\alias{sdmSetting,formula,speciesData,character-method}
-\alias{sdmSetting<-,ANY-method}
-\alias{glmSetting,ANY-method}
+\alias{sdmSetting,ANY,sdmdata,character-method}
+\alias{show,sdmSetting-method}
 
-\title{creating sdm Data object}
+\title{creating sdmSetting object}
 
 \description{
-Creates sdmData objects including species (single or multiple) and explanatory variates
+Creates sdmSetting object that holds settings to fit and evaluate the models. It can be used to reproduce a study.
 }
 
 \usage{
-sdmSetting(formula,data,methods,...)
-glmSetting(family,...)
-\S4method{sdmSetting}{ANY}(x)<-value
+sdmSetting(formula,data,methods,interaction.depth=1,n=1,replication=NULL,cv.folds=NULL,
+     test.percent=NULL,bg=NULL,var.importance=NULL,response.curve=TRUE,
+     var.selection=FALSE,ncore=1L,...)
+
+
 }
 
 \arguments{
   \item{formula}{specify the structure of the model}
   \item{data}{sdm data object or data.frame including species and feature data}
   \item{methods}{character, name of the algorithms}
-  \item{family}{family setting for glm method}
-   \item{x}{sdmSettings objects}
-    \item{value}{setting object for different methods}
+  \item{interaction.depth}{level of interactions between predictors}
+  \item{n}{number of replicates (run)}
+  \item{replication}{replication method (e.g., 'subsampling', 'bootstrapping', 'cv')}
+  \item{cv.folds}{number of folds if cv (cross-validation) is in the selected replication methods}
+  \item{test.percent}{test percentage if subsampling is in the selected replication methods}
+  \item{bg}{background setting}
+  \item{var.importance}{logical, whether variable importance should be calculated}
+  \item{response.curve}{method to calculate variable importance}
+  \item{var.selection}{logical, whether variable selection should be considered}
+  \item{ncore}{number of cores to parallelize processing}
   \item{...}{additional arguments}
   }
 \details{

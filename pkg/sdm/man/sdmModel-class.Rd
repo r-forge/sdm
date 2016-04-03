@@ -1,48 +1,58 @@
-\name{sdm-classes}
+\name{sdmModels-classes}
 
 \docType{class}
 
-\alias{sdmdata-class}
-\alias{sdmFormula-class}
-\alias{sdmCorrelativeMethod-class}
-\alias{multipleSpecies-class}
+\alias{sdmModels-class}
+\alias{sdmEvaluate-class}
 
-\alias{show,sdmdata-method}
-\alias{show,singleSpecies-method}
-\alias{show,multipleSpecies-method}
-\alias{show,SpeciesDataList-method}
+\alias{listORcharacter-class}
+\alias{characterORnull-class}
 
-\title{sdm classes}
+\alias{CRSorNULL-class}
+\alias{formulaORnull-class}
+\alias{numericORnull-class}
+\alias{characterORmissing-class}
+\alias{listORnull-class}
+\alias{functionORnull-class}
+\alias{matrixORnull-class}
+\alias{data.frameORnull-class}
+\alias{functionORcharacter-class}
+\alias{environmentORnull-class}
+
+
+\alias{show,sdmModels-method}
+
+\title{sdmModels classes}
 
 \description{
 
-sdm package defined different classes to handle data, models and their results.
+An S4 class to keep all the information of fitted models as well as their evaluations.
 
 }
 
 \section{Slots}{
-Slots for sdmdata objects:
+Slots for sdmModels objects:
 	\describe{
-\item{\code{species.names}}{The names of species}
+\item{\code{data}}{a sdmdata object}
 
-\item{\code{species}}{Contains the species data}
+\item{\code{recordIDs}}{Contains the species data}
 
-\item{\code{features}}{A data.frame containing predictor variables}
+\item{\code{setting}}{A data.frame containing predictor variables}
 
-\item{\code{feature.names}}{The names of predictor variables}
+\item{\code{run.info}}{a data.frame containing info on runs}
 
-\item{\code{factors}}{The names of categorical variables (if any)}
+\item{\code{replicates}}{The names of categorical variables (if any)}
 
-\item{\code{info}}{Other information such as coordinates, metadata, etc.}
+\item{\code{models}}{a list contains all fitted objects and relevant information (e.g., evaluation) }
 
-\item{\code{groups}}{A list including information on groups in the dataset}
+\item{\code{observed}}{slot in sdmEvaluate: a numeric vector of observed values}
 
-\item{\code{sdmFormula}}{An object of class sdmFormula containing the formula and its' terms defined by user}
+\item{\code{predicted}}{slot in sdmEvaluate: a numeric vector of predicted values}
 
-\item{\code{errorLog}}{Reports on errors in the data raised throgh data cleaning (e.g., NA, duplications, etc.)}
+\item{\code{statistics}}{slot in sdmEvaluate: a list of threshold-independent statistics}
+\item{\code{threshold_based}}{slot in sdmEvaluate: a data.frame of threshold-based statistics}
   }
 }
-
 
 \author{Babak Naimi 
 
@@ -51,9 +61,7 @@ Slots for sdmdata objects:
 \url{http://biogeoinformatics.org}
 }
 
-\examples{
-showClass("sdmModel")
-}
+
 
 \keyword{classes}
 \keyword{spatial}

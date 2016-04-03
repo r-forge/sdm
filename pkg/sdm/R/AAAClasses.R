@@ -52,16 +52,6 @@ setClass(".methodTemplate",
 
 ################################
 
-#' @title sdmFormula Class
-#' 
-#' @description An S4 class to represent different terms and component in formula
-#' 
-#' @slot formula The formula defined by user
-#' @slot vars The name of variables defined in the formula
-#' @slot species The name of species (response) variables
-#' @slot model.terms The defined terms in the formula that will be used in model fitting
-#' @slot data.terms The defined terms in the formula that will be used in data manipulation
-
 setClass('sdmFormula',
          representation(
            formula='formula',
@@ -214,18 +204,11 @@ setRefClass('.formulaFunctions',
 #-----------
 #------------
 
-#' @title featureFrame class
-#'
-#' @description An S4 class contains the information of features used to fit a model
-#' 
-#' @slot var.names A character vector containing the name of variabes from the dataset used to generate the features
-#' @slot feature.types A list containing the definition of features
-
 setClass('featuresFrame',
          representation(
            vars='character',
            feature.types='list',
-           resonse.specific='listORnull'
+           response.specific='listORnull'
          )
 )
 # setClass('featuresFrame',
@@ -285,17 +268,6 @@ setClass('.species.data',
 #----------
 
 
-#' An S4 class representing sdm dataset
-#' 
-#' @slot species.names The names of species
-#' @slot species Contains the species data
-#' @slot features A data.frame containing predictor variables
-#' @slot feature.names The names of predictor variables
-#' @slot factors The names of categorical variables (if any)
-#' @slot info Other information such as coordinates, metadata, etc.
-#' @slot groups A list including information on groups in the dataset
-#' @slot sdmFormula An object of class sdmFormula containing the formula and its' terms defined by user
-#' @slot errorLog Reports on errors in the data raised throgh data cleaning (e.g., NA, duplications, etc.)
 setClass('sdmdata',
          representation(
            species.names='character',
@@ -436,26 +408,6 @@ setClass('sdmdata',
 )
 
 
-
-#-------
-#' @title sdmCorrelativeMethod class
-#'
-#' @description An S4 class representing sdm dataset
-#' 
-#' @slot names Modelling method name
-#' @slot aliases Alternative names for the method
-#' @slot packages The required external package by the method
-#' @slot modelTypes Specifies whether the model is presence-absence, presence-only, abundance, or multinomial
-#' @slot fitParams a list of parameters needed by the method
-#' @slot fitSettings a list of setting parameters for the method
-#' @slot settingRules a function that adjust the setting parameters according to data
-#' @slot fitFunction The main function use for fitting the model
-#' @slot tuneParams a list of parameters to be tuned before the final fitting
-#' @slot predictParams a list of parameters needed by predict function
-#' @slot predictSettings a list of setting parameters for prediction
-#' @slot predictFunction The main predict function
-#' @slot metadata a metadata object containing the information about who creates the object, date, etc.
-#' @slot .temp.env an environment object containing the functions defined by a user that is not from a package
 
 # sdm methods:
 setClass("sdmCorrelativeMethod",

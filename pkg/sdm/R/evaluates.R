@@ -344,8 +344,8 @@ setMethod('evaluates', signature(x='vector',p='vector'),
         opt <- opt[1]
         opt <- which(th.criteria == opt)
       }
-    }
-  }
+    } 
+  } else opt <- 2
   
   mi <- mi[mi[,wtest],]
   
@@ -410,4 +410,20 @@ setMethod('evaluates', signature(x='vector',p='vector'),
 }
 
 
+#--------
+if (!isGeneric("getEvaluation")) {
+  setGeneric("getEvaluation", function(x,w,wtest,stat,opt,...)
+    standardGeneric("getEvaluation"))
+}  
 
+setMethod('getEvaluation', signature(x='sdmModels'),
+          function(x, w=NULL, wtest=NULL,stat=c('AUC','COR','Deviance','TSS'),opt=2,...) {
+            e <- .extractEvaluation(x,id=w,wtest=wtest,stat=stat,opt=opt)
+            o <- data.frame(ncol=length(stat)+1,nrow=length(e))
+            colnames(o) <- c('modelID',stat)
+            if (length(stat) > 1) o[,2:ncol(o)] <- t(sapply(e,function(x) unlist(x)))
+            else o[,2] <- sapply(e,function(x) unlist(x))
+            o[,1] <- as.numeric(names(e))
+            e
+          }
+)

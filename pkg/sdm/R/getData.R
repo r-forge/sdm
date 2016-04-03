@@ -69,8 +69,9 @@
   data[,as.character(formula[[2]])]
 }
 #-------
+#, row.names = NULL, optional = FALSE
 setMethod('as.data.frame', signature(x='sdmdata'), 
-          function(x, row.names = NULL, optional = FALSE, ...) {
+          function(x, ...) {
             .getSdmDataFrame(x,...)
           }
 )

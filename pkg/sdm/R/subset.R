@@ -197,15 +197,16 @@
 
 #-------
 setMethod("[", c("sdmdata"),
-          function(x, i, j, ...,drop=FALSE) {
+          function(x, i, ...,drop=FALSE) {
             if (missing(i)) stop('i is missing!')
             if(drop) .getDataFame(x,i)
             else .subsetRecords(x,i)
           }
 )
 #--------
+
 setMethod("[[", c("sdmModels","ANY","ANY"),
-          function(x,i,drop=FALSE,...) {
+          function(x,i,drop=TRUE,...) {
             if ( missing(i)) { stop('you must provide an index') }
             mi <- .getModel.info(x,w=i)
             if (nrow(mi) == 0) stop('the specified index in i are not within the range of model IDs')
@@ -255,13 +256,14 @@ setMethod("[[", c("sdmModels","ANY","ANY"),
 )
 
 
+
 if (!isGeneric("subset")) {
   setGeneric("subset", function(x, ...)
     standardGeneric("subset"))
 }
 
 setMethod("subset","sdmModels",
-          function(x, subset, drop=FALSE, ...) {
+          function(x, subset, drop=TRUE, ...) {
             if (missing(subset)) { stop('you must provide an index') }
             x[[subset,drop=drop,...]]
           })

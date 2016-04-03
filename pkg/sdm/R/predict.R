@@ -269,7 +269,7 @@ setMethod('predict', signature(object='sdmModels'),
             for (i in seq_along(pkgs)) {
               if ('.temp' %in% pkgs[[i]]) {
                 if (!".sdmMethods$userFunctions" %in% search()) attach(.sdmMethods$userFunctions)
-                on.exit(substitute(if (".sdmMethods$userFunctions" %in% search()) detach('.sdmMethods$userFunctions')))
+                on.exit(substitute(detach('.sdmMethods$userFunctions')))
                 pkgs[[i]] <- pkgs[[i]][-which(pkgs[[i]] == '.temp')]
               }
             }

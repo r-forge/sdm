@@ -314,7 +314,7 @@
       #e <- .sdmMethods$userFunctions
       #.movEnv2sdm(e)
       if (!".sdmMethods$userFunctions" %in% search()) attach(.sdmMethods$userFunctions)
-      on.exit(substitute(if (".sdmMethods$userFunctions" %in% search()) detach('.sdmMethods$userFunctions')))
+      on.exit(substitute(detach('.sdmMethods$userFunctions')))
       pkgs[[i]] <- pkgs[[i]][-which(pkgs[[i]] == '.temp')]
     }
   }
@@ -457,14 +457,14 @@
 #----------------------------------------
 if (!isGeneric("sdmSetting")) {
   setGeneric("sdmSetting", function(formula,data,methods,interaction.depth=1,n=1,replication=NULL,
-                                    cv.folds=NULL,test.percent=NULL,bg=NULL,bg.n=NULL,var.importance=NULL,response.curve=TRUE,
+                                    cv.folds=NULL,test.percent=NULL,bg=NULL,var.importance=NULL,response.curve=TRUE,
                                     var.selection=FALSE,ncore=1L,...)
     standardGeneric("sdmSetting"))
 }
 
 setMethod('sdmSetting', signature(formula='ANY','sdmdata','character'), 
           function(formula,data,methods,interaction.depth=1,n=1,replication=NULL,
-                   cv.folds=NULL,test.percent=NULL,bg=NULL,bg.n=NULL,var.importance=NULL,response.curve=TRUE,
+                   cv.folds=NULL,test.percent=NULL,bg=NULL,var.importance=NULL,response.curve=TRUE,
                    var.selection=FALSE,ncore=1L,...) {
             
             if (!.sdmOptions$getOption('sdmLoaded')) .addMethods()

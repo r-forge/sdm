@@ -60,6 +60,21 @@ setMethod('getmethodNames', signature(x='ANY'),
 )
 
 
+if (!isGeneric("getModelInfo")) {
+  setGeneric("getModelInfo", function(x,...)
+    standardGeneric("getModelInfo"))
+}
+
+
+setMethod('getModelInfo', signature(x='sdmModels'), 
+          function(x,w,...) {
+            if (missing(w)) w <- NULL
+            .getModel.info(x,w,...)
+            
+          }
+)
+
+
 
 .addMethods <- function() {
   methodInfo <- NULL

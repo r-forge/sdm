@@ -52,10 +52,3 @@
   w <- colnames(data) != sp
   dismo::maxent(x=data[,w,drop=FALSE],p=data[,!w,drop=TRUE],args=args,...)
 }
-#   library(rJava)
- #  library(dismo)
-#   sdm:::.detachPackage(c('dismo','rJava'))
-#    m <- maxent(df[,1:2],df[,3])
-#   m <- sdm:::.maxent(formula=sp~b15+NDVI,data=df,args=NULL)
-# rJava::.jinit()
-# search()

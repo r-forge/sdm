@@ -2,8 +2,11 @@
 
 \alias{roc}
 \alias{getRoc}
+\alias{roc,vector,vector-method}
 \alias{roc,sdmModels-method}
+\alias{roc,sdmModels,ANY-method}
 \alias{getRoc,vector,vector-method}
+\alias{getRoc,sdmModels,ANY-method}
 
 \title{plot ROC curves}
 
@@ -13,7 +16,8 @@ Plot the Receiver Operating Characteristics (ROC) curve with AUC statistic in th
 
 \usage{
 roc(x,p=NULL,species=NULL,method=NULL,replication=NULL,run=NULL,
-     wtest=NULL,smooth=TRUE,legend=TRUE,...)
+     wtest=NULL,smooth=FALSE,legend=TRUE,...)
+     
 getRoc(x,p,...)
 }
 

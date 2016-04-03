@@ -286,7 +286,7 @@
   ff@feature.types <- o
   if (!is.null(os)) {
     ff@vars <- unique(c(ff@vars,unlist(lapply(os,function(x) x@var))))
-    ff@resonse.specific <- os
+    ff@response.specific <- os
   }
   
   if (!is.null(om)) {
@@ -377,8 +377,8 @@
       } else if (ft[[i]] == 'threshold') d[[fn[[i]]]] <- .getFeature.threshold(data[,n[[i]]],th = x@feature.types[[i]]@params$threshold,increasing=x@feature.types[[i]]@params$increasing)
       else if (ft[[i]] == 'hinge') d[[fn[[i]]]] <- .getFeature.hinge(data[,n[[i]]],th = x@feature.types[[i]]@params$threshold,increasing=x@feature.types[[i]]@params$increasing)
     }
-    if (!is.null(x@resonse.specific)) {
-      sp <- lapply(x@resonse.specific, function(x) x@response)
+    if (!is.null(x@response.specific)) {
+      sp <- lapply(x@response.specific, function(x) x@response)
       if (!is.null(response)) {
         w <- response %in% sp
         if (any(w)) sp <- response[w]
@@ -387,12 +387,12 @@
       o <- list()
       for (s in sp) {
         dd <- data.frame(matrix(nrow=nrow(data),ncol=0))
-        n <- lapply(x@resonse.specific,function(x) x@var)
-        fn <- lapply(x@resonse.specific,function(x) x@feature.name)
-        ft <- lapply(x@resonse.specific,function(x) x@type)
+        n <- lapply(x@response.specific,function(x) x@var)
+        fn <- lapply(x@response.specific,function(x) x@feature.name)
+        ft <- lapply(x@response.specific,function(x) x@type)
         for (i in 1:length(n)) {
-          if (ft[[i]] == 'threshold') dd[[fn[[i]]]] <- .getFeature.threshold(data[,n[[i]]],th = x@resonse.specific[[i]]@params$threshold,increasing=x@resonse.specific[[i]]@params$increasing)
-          else if (ft[[i]] == 'hinge') dd[[fn[[i]]]] <- .getFeature.hinge(data[,n[[i]]],th = x@resonse.specific[[i]]@params$threshold,increasing=x@resonse.specific[[i]]@params$increasing)
+          if (ft[[i]] == 'threshold') dd[[fn[[i]]]] <- .getFeature.threshold(data[,n[[i]]],th = x@response.specific[[i]]@params$threshold,increasing=x@response.specific[[i]]@params$increasing)
+          else if (ft[[i]] == 'hinge') dd[[fn[[i]]]] <- .getFeature.hinge(data[,n[[i]]],th = x@response.specific[[i]]@params$threshold,increasing=x@response.specific[[i]]@params$increasing)
         }
         o[[s]] <- dd
       }
@@ -407,10 +407,10 @@
   # get the name of features from a featureFrame onject (x)
   # If merged is FALSE, separately reported in a list
   n1 <- unlist(lapply(x@feature.types,function(x) x@feature.name))
-  n2 <- unlist(lapply(x@resonse.specific ,function(x) x@feature.name))
+  n2 <- unlist(lapply(x@response.specific ,function(x) x@feature.name))
   
   f1 <- unlist(lapply(x@feature.types,function(x) x@type))
-  f2 <- unlist(lapply(x@resonse.specific,function(x) x@type))
+  f2 <- unlist(lapply(x@response.specific,function(x) x@type))
   names(f1) <- n1
   names(f2) <- n2
   if (merged) c(f1,f2)
