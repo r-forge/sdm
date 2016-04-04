@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  April 2016
-# Version 2.2
+# Version 2.3
 # Licence GPL v3
 #--------
 
@@ -308,7 +308,8 @@
 
 .generateWL <- function(d,s) {
   pkgs <- .sdmMethods$getPackageNames(s@methods)
-  
+  .sdm...temp <- NULL; rm(.sdm...temp)
+  pos <- 1
   for (i in seq_along(pkgs)) {
     if ('.temp' %in% pkgs[[i]]) {
       #e <- .sdmMethods$userFunctions
@@ -317,13 +318,12 @@
       #  attach(.sdmMethods$userFunctions)
       #  on.exit(substitute(detach('.sdmMethods$userFunctions')))
       #}
-      .sdm...temp <- NULL; rm(.sdm...temp)
       w <- ls(.sdmMethods$userFunctions)
       if (length(w) > 0) {
-        assign('.sdm...temp',c(),pos=1)
+        assign('.sdm...temp',c(),envir = as.environment(pos))
         for (ww in w) {
           if (!exists(ww,where=1)) {
-            assign(ww,.sdmMethods$userFunctions[[ww]],pos=1)
+            assign(ww,.sdmMethods$userFunctions[[ww]],envir = as.environment(pos))
             .sdm...temp <<- c(.sdm...temp,ww)
           }
         }
@@ -662,6 +662,7 @@ if (!isGeneric("sdm")) {
 setMethod('sdm', signature(formula='formula',data='sdmdata',methods='character'), 
           function(formula,data,methods,...) {
             a <- c('interaction.depth','n','replication','cv.folds','test.percent','bg','bg.n','var.importance','response.curve','var.selection','setting','ncore')
+            .sdm...temp <- NULL; rm(.sdm...temp)
             dot <- list(...)
             ndot <- names(dot)
             if (length(ndot) > 0) {

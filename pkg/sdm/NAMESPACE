@@ -7,7 +7,7 @@ importFrom("stats", "as.formula", "cor", "cov", "formula", "glm",
            "lm","optim")
 importFrom("utils", "combn", "data", "read.csv","object.size","install.packages","remove.packages")
 importFrom("raster",  "raster", "brick","cellFromXY","ncell","trim","extract","extent","as.data.frame","predict",
-           "writeRaster","calc","addLayer","setZ","extension","sampleRandom","values")
+           "writeRaster","calc","addLayer","setZ","extension","sampleRandom","values","subset")
 exportClasses(sdmdata, sdmFormula,sdmEvaluate,sdmModels,sdmCorrelativeMethod)
 exportMethods(sdmData,sdm,sdmSetting,evaluates,roc,getRoc,add,getmethodNames,getmethod,getModelInfo,
               getEvaluation,read.sdm,write.sdm,installAll)
