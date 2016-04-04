@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  April 2016
-# Version 1.0
+# Version 1.1
 # Licence GPL v3
 #--------
 
@@ -9,7 +9,7 @@
   pkgs <- unlist(.sdmMethods$getPackageNames())
   pkgs <- pkgs[pkgs != '.temp']
   attributes(pkgs) <- NULL
-  p2 <- c('shiny')
+  p2 <- c('shiny','rgdal')
   c(pkgs,p2)
 }
 

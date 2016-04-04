@@ -12,7 +12,7 @@ Creates sdmSetting object that holds settings to fit and evaluate the models. It
 
 \usage{
 sdmSetting(formula,data,methods,interaction.depth=1,n=1,replication=NULL,cv.folds=NULL,
-     test.percent=NULL,bg=NULL,var.importance=NULL,response.curve=TRUE,
+     test.percent=NULL,bg=NULL,bg.n=NULL,var.importance=NULL,response.curve=TRUE,
      var.selection=FALSE,ncore=1L,...)
 
 
@@ -27,7 +27,8 @@ sdmSetting(formula,data,methods,interaction.depth=1,n=1,replication=NULL,cv.fold
   \item{replication}{replication method (e.g., 'subsampling', 'bootstrapping', 'cv')}
   \item{cv.folds}{number of folds if cv (cross-validation) is in the selected replication methods}
   \item{test.percent}{test percentage if subsampling is in the selected replication methods}
-  \item{bg}{background setting}
+  \item{bg}{method to generate background}
+  \item{bg.n}{number of background records}
   \item{var.importance}{logical, whether variable importance should be calculated}
   \item{response.curve}{method to calculate variable importance}
   \item{var.selection}{logical, whether variable selection should be considered}

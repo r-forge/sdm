@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date :  March 2016
-# Version 2.1
+# Date :  April 2016
+# Version 2.2
 # Licence GPL v3
 #--------
 
@@ -307,14 +307,27 @@
 }
 
 .generateWL <- function(d,s) {
-  pkgs <- .sdmMethods$getPakagNames(s@methods)
+  pkgs <- .sdmMethods$getPackageNames(s@methods)
   
   for (i in seq_along(pkgs)) {
     if ('.temp' %in% pkgs[[i]]) {
       #e <- .sdmMethods$userFunctions
       #.movEnv2sdm(e)
-      if (!".sdmMethods$userFunctions" %in% search()) attach(.sdmMethods$userFunctions)
-      on.exit(substitute(detach('.sdmMethods$userFunctions')))
+      #if (!".sdmMethods$userFunctions" %in% search()) {
+      #  attach(.sdmMethods$userFunctions)
+      #  on.exit(substitute(detach('.sdmMethods$userFunctions')))
+      #}
+      
+      w <- ls(.sdmMethods$userFunctions)
+      if (length(w) > 0) {
+        assign('.sdm...temp',c(),pos=1)
+        for (ww in w) {
+          if (!exists(ww,where=1)) {
+            assign(ww,.sdmMethods$userFunctions[[ww]],pos=1)
+            .sdm...temp <<- c(.sdm...temp,ww)
+          }
+        }
+      }
       pkgs[[i]] <- pkgs[[i]][-which(pkgs[[i]] == '.temp')]
     }
   }
@@ -461,14 +474,14 @@
 #----------------------------------------
 if (!isGeneric("sdmSetting")) {
   setGeneric("sdmSetting", function(formula,data,methods,interaction.depth=1,n=1,replication=NULL,
-                                    cv.folds=NULL,test.percent=NULL,bg=NULL,var.importance=NULL,response.curve=TRUE,
+                                    cv.folds=NULL,test.percent=NULL,bg=NULL,bg.n=NULL,var.importance=NULL,response.curve=TRUE,
                                     var.selection=FALSE,ncore=1L,...)
     standardGeneric("sdmSetting"))
 }
 
 setMethod('sdmSetting', signature(formula='ANY','sdmdata','character'), 
           function(formula,data,methods,interaction.depth=1,n=1,replication=NULL,
-                   cv.folds=NULL,test.percent=NULL,bg=NULL,var.importance=NULL,response.curve=TRUE,
+                   cv.folds=NULL,test.percent=NULL,bg=NULL,bg.n=NULL,var.importance=NULL,response.curve=TRUE,
                    var.selection=FALSE,ncore=1L,...) {
             
             if (!.sdmOptions$getOption('sdmLoaded')) .addMethods()
@@ -668,7 +681,11 @@ setMethod('sdm', signature(formula='formula',data='sdmdata',methods='character')
             s <- do.call('sdmSetting',dot)
             w <- .generateWL(data,s)
             w <- w$fit()
-            if (".sdmMethods$userFunctions" %in% search()) detach('.sdmMethods$userFunctions')
+            #if (".sdmMethods$userFunctions" %in% search()) detach('.sdmMethods$userFunctions')
+            if (".sdm...temp" %in% ls(pattern='^.sdm..',pos=1,all.names = TRUE)) {
+              rm(list=.sdm...temp,pos=1)
+              rm(.sdm...temp,pos=1)
+            }
             w
           }
 )

@@ -10,9 +10,7 @@
   .sdmOptions$addOption('sdmLoaded',FALSE)
   invisible(0)
 }
-# .onLoad<- function(libname, pkgname) {
-#   .addMethods()
-# }
+
 .onUnload <- function(libpath) {
   if (".sdmMethods$userFunctions" %in% search()) detach('.sdmMethods$userFunctions')
   invisible(0)

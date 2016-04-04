@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  Aptil 2016
-# Version 2.1
+# Version 2.2
 # Licence GPL v3
 # 
 # .raster2data.table <- function(r) {
@@ -264,12 +264,22 @@ setMethod('predict', signature(object='sdmModels'),
             if (!.sdmOptions$getOption('sdmLoaded')) .addMethods()
             #---
             if (missing(method) || is.null(method)) method <- object@setting@methods
-            pkgs <- .sdmMethods$getPakagNames(method)
+            pkgs <- .sdmMethods$getPackageNames(method)
             
             for (i in seq_along(pkgs)) {
               if ('.temp' %in% pkgs[[i]]) {
-                if (!".sdmMethods$userFunctions" %in% search()) attach(.sdmMethods$userFunctions)
-                on.exit(substitute(detach('.sdmMethods$userFunctions')))
+                #if (!".sdmMethods$userFunctions" %in% search()) attach(.sdmMethods$userFunctions)
+                #on.exit(substitute(detach('.sdmMethods$userFunctions')))
+                w <- ls(.sdmMethods$userFunctions)
+                if (length(w) > 0) {
+                  assign('.sdm...temp',c(),pos=1)
+                  for (ww in w) {
+                    if (!exists(ww,where=1)) {
+                      assign(ww,.sdmMethods$userFunctions[[ww]],pos=1)
+                      .sdm...temp <<- c(.sdm...temp,ww)
+                    }
+                  }
+                }
                 pkgs[[i]] <- pkgs[[i]][-which(pkgs[[i]] == '.temp')]
               }
             }
@@ -496,6 +506,10 @@ setMethod('predict', signature(object='sdmModels'),
               for (i in seq_along(errLog)) cat(errLog[[i]],'\n')
             }
             
+            if (".sdm...temp" %in% ls(pattern='^.sdm..',pos=1,all.names = TRUE)) {
+              rm(list=.sdm...temp,pos=1)
+              rm(.sdm...temp,pos=1)
+            }
             #if (".sdmMethods$userFunctions" %in% search()) detach('.sdmMethods$userFunctions')
             
             if (!inherits(b,'Raster')) {
