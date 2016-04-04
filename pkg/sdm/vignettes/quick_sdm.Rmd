@@ -6,8 +6,8 @@ output: rmarkdown::html_vignette
 
 vignette: >
   %\VignetteIndexEntry{getting started with sdm package}
-  %\VignetteEngine{rmarkdown::knitr}
-  
+  %\VignetteEngine{knitr::rmarkdown}
+  %\usepackage[utf8]{inputenc}
 ---
 
 
@@ -43,9 +43,6 @@ The package is followed by several datasets that are used in the help pages. We 
 
 We use a shapefile containing presence=absence records for a species as spatial points (species.shp), and four raster datasets (in Ascii format) as explanatory variables (predictors). The files are in the sdm library, so we can directly read them from the library folder. We use rgdal to read raster data (it supports different common formats), and raster package to handle the raster data.
 
-```{r, echo=FALSE}
-setwd('~/Dropbox/_a/_sdm_workshop_CMEC_retreat 2015/exercise/')
-```
 
 ```{r, fig.width = 6, fig.height = 6}
 library(sdm)
