@@ -1,16 +1,22 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  April 2016
-# Version 1.1
+# Version 1.2
 # Licence GPL v3
 #--------
 
 
 .getPackageList <- function() {
-  pkgs <- unlist(.sdmMethods$getPackageNames())
-  pkgs <- pkgs[pkgs != '.temp']
-  attributes(pkgs) <- NULL
-  p2 <- c('shiny','rgdal')
-  c(pkgs,p2)
+  methodInfo <- NULL
+  pkgs <- c()
+  lst <- list.files(system.file("methods/sdm", package="sdm"),pattern='R$',full.names = TRUE)
+  for (l in lst) {
+    source(l,local=TRUE)
+    p <- methodInfo$packages
+    p <- p[!p == '.tmp']
+    pkgs <- c(pkgs,p)
+  }
+  p <- c('shiny','rgdal','raster')
+  unique(c(pkgs,p))
 }
 
 
@@ -58,5 +64,6 @@ setMethod('installAll', signature(pkgs='ANY'),
                 } else cat(paste('\n ',length(p[s]),' packages are successfully installed or updated...\n'))
               } else cat(paste('\n There is no package to install!\n'))
             }
+            .addMethods()
           }
 )

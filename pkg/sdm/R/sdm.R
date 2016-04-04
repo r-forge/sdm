@@ -317,7 +317,7 @@
       #  attach(.sdmMethods$userFunctions)
       #  on.exit(substitute(detach('.sdmMethods$userFunctions')))
       #}
-      
+      .sdm...temp <- NULL; rm(.sdm...temp)
       w <- ls(.sdmMethods$userFunctions)
       if (length(w) > 0) {
         assign('.sdm...temp',c(),pos=1)
