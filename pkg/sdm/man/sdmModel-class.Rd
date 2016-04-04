@@ -4,6 +4,7 @@
 
 \alias{sdmModels-class}
 \alias{sdmEvaluate-class}
+\alias{sdmFormula-class}
 
 \alias{listORcharacter-class}
 \alias{characterORnull-class}
@@ -45,13 +46,27 @@ Slots for sdmModels objects:
 
 \item{\code{models}}{a list contains all fitted objects and relevant information (e.g., evaluation) }
 
-\item{\code{observed}}{slot in sdmEvaluate: a numeric vector of observed values}
 
-\item{\code{predicted}}{slot in sdmEvaluate: a numeric vector of predicted values}
 
-\item{\code{statistics}}{slot in sdmEvaluate: a list of threshold-independent statistics}
-\item{\code{threshold_based}}{slot in sdmEvaluate: a data.frame of threshold-based statistics}
+\bold{ Slots for sdmEvaluate objects:}
+\item{\code{observed}}{a numeric vector of observed values}
+
+\item{\code{predicted}}{a numeric vector of predicted values}
+
+\item{\code{statistics}}{a list of threshold-independent statistics}
+\item{\code{threshold_based}}{a data.frame of threshold-based statistics}
+
+\bold{ Slots for sdmFormula objects:}
+\item{\code{formula}}{input formula}
+
+\item{\code{vars}}{character, name of variables}
+
+\item{\code{model.terms}}{the formula terms used in model fitting}
+\item{\code{data.terms}}{the formula terms used to manipulate data}
+  
   }
+  
+
 }
 
 \author{Babak Naimi 

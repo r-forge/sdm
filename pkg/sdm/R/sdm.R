@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date :  Feb. 2015
-# Version 2.0
+# Date :  March 2016
+# Version 2.1
 # Licence GPL v3
 #--------
 
@@ -322,8 +322,12 @@
   ww <- .loadLib(pkgs)
   if (!all(ww)) {
     if (!any(ww)) {
+      cat('some methods are removed because they depend on some packages that are not installed on this machine!\n')
+      cat('you can use installAll() function to simply install all the packages that may be required by some functions in the sdm package!\n')
       stop(paste('There is no installed packages rquired by the selected methods. Package names:',paste(unlist(pkgs),collapse=', ')))
     } else {
+      cat('some methods are removed because they depend on some packages that are not installed on this machine!\n')
+      cat('you can use installAll() function to simply install all the packages that may be required by some functions in the sdm package!\n')
       warning(paste('There is no installed packages rquired by the methods:',paste(s@methods[!ww],collapse=', '),'; These methods are excluded! The packages need to be installed for these methods:',paste(unlist(pkgs[!ww]),collapse=', ')))
       s@methods <- s@methods[ww]
     }

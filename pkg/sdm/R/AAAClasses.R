@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  April 2016
-# Version 3.1
+# Version 3.2
 # Licence GPL v3
 
 
@@ -531,7 +531,7 @@ setRefClass('.sdmMethodsContainer',
                 } else stop('none of the specified methods are registered sdm Methods!')
               },
               #---
-              getPakagNames=function(m=getMethodNames()) {
+              getPackageNames=function(m=getMethodNames()) {
                 for (i in seq_along(m)) m[i] <- .self$whichMethod(m[i])
                 names(m) <- m
                 lapply(m,function(x) {.self$Methods[[x]]@packages})

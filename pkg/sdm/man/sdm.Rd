@@ -7,7 +7,7 @@
 \title{Fit and evaluate species distribution models}
 
 \description{
-Fits using multiple (available) methods that are specified by a user in \code{methods}, and evaluates their performance.
+Fits sdm for single or multiple species using single or multiple methods specified by a user in \code{methods} argument, and evaluates their performance.
 }
 
 \usage{

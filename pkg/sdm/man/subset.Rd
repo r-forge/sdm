@@ -72,9 +72,7 @@ m2 <- subset(m,3:4,drop=FALSE)
 m2
 
 getModelInfo(m2)
-}
-
-
+} 
 }
 
 \keyword{ spatial }

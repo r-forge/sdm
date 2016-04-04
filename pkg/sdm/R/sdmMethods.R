@@ -1,20 +1,21 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  March 2016
-# Version 1.1
+# Version 2.0
 # Licence GPL v3
 
 
 if (!isGeneric("add")) {
-  setGeneric("add", function(x,w,...)
+  setGeneric("add", function(x,w,echo,...)
     standardGeneric("add"))
 }
 
 
 setMethod('add', signature(x='list',w='character'), 
-          function(x,w,...) {
-            dot <- list(...)
-            if ('echo' %in% names(dot)) echo <- dot[['echo']]
-            else echo <- TRUE
+          function(x,w='sdm',echo=TRUE,...) {
+            #dot <- list(...)
+            if (missing(w)) w <- 'sdm'
+            if (missing(echo) || !is.logical(echo)) echo <- TRUE
+            
             if (w %in% c('sdm','sdmMethod','model','sdmCorrelativeMethod')) {
               m <- do.call('.create.sdmCorrelativeMethod',x)
               if (inherits(m,"sdmCorrelativeMethod")) {
@@ -46,16 +47,16 @@ setMethod('getmethod', signature(x='character'),
 )
 
 if (!isGeneric("getmethodNames")) {
-  setGeneric("getmethodNames", function(x,...)
+  setGeneric("getmethodNames", function(w,...)
     standardGeneric("getmethodNames"))
 }
 
 
-setMethod('getmethodNames', signature(x='ANY'), 
-          function(x,alt=TRUE,...) {
-            if (missing(x)) x <- 'sdm'
+setMethod('getmethodNames', signature(w='ANY'), 
+          function(w,alt,...) {
+            if (missing(w)) w <- 'sdm'
             if (missing(alt)) alt <- TRUE
-            if (x == 'sdm') .sdmMethods$getMethodNames(alt=alt)
+            if (w == 'sdm') .sdmMethods$getMethodNames(alt=alt)
           }
 )
 

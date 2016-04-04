@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date :  Feb. 2014
-# Version 2.0
+# Date :  Aptil 2016
+# Version 2.1
 # Licence GPL v3
 # 
 # .raster2data.table <- function(r) {
