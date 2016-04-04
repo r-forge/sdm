@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  April 2016
-# Version 2.3
+# Version 2.4
 # Licence GPL v3
 #--------
 
@@ -310,25 +310,28 @@
   pkgs <- .sdmMethods$getPackageNames(s@methods)
   .sdm...temp <- NULL; rm(.sdm...temp)
   pos <- 1
-  for (i in seq_along(pkgs)) {
-    if ('.temp' %in% pkgs[[i]]) {
-      #e <- .sdmMethods$userFunctions
-      #.movEnv2sdm(e)
-      #if (!".sdmMethods$userFunctions" %in% search()) {
-      #  attach(.sdmMethods$userFunctions)
-      #  on.exit(substitute(detach('.sdmMethods$userFunctions')))
-      #}
-      w <- ls(.sdmMethods$userFunctions)
-      if (length(w) > 0) {
-        assign('.sdm...temp',c(),envir = as.environment(pos))
-        for (ww in w) {
-          if (!exists(ww,where=1)) {
-            assign(ww,.sdmMethods$userFunctions[[ww]],envir = as.environment(pos))
-            .sdm...temp <<- c(.sdm...temp,ww)
-          }
+  
+  w <- sapply(pkgs, function(x) '.temp' %in% x)
+  
+  if (any(w)) {
+    if (".sdm...temp" %in% ls(pattern='^.sdm..',pos=1,all.names = TRUE)) {
+      ww <- ls(.sdmMethods$userFunctions)
+      rm(list=ww,pos=1)
+      rm(.sdm...temp,pos=1)
+    }
+    #----
+    for (i in which(w)) pkgs[[i]] <- pkgs[[i]][which(pkgs[[i]] != '.temp')]
+    #----
+    w <- ls(.sdmMethods$userFunctions)
+    
+    if (length(w) > 0) {
+      assign('.sdm...temp',c(),envir = as.environment(pos))
+      for (ww in w) {
+        if (!exists(ww,where=1)) {
+          assign(ww,.sdmMethods$userFunctions[[ww]],envir = as.environment(pos))
+          .sdm...temp <<- c(.sdm...temp,ww)
         }
       }
-      pkgs[[i]] <- pkgs[[i]][-which(pkgs[[i]] == '.temp')]
     }
   }
   
@@ -684,7 +687,8 @@ setMethod('sdm', signature(formula='formula',data='sdmdata',methods='character')
             w <- w$fit()
             #if (".sdmMethods$userFunctions" %in% search()) detach('.sdmMethods$userFunctions')
             if (".sdm...temp" %in% ls(pattern='^.sdm..',pos=1,all.names = TRUE)) {
-              rm(list=.sdm...temp,pos=1)
+              ww <- ls(.sdmMethods$userFunctions)
+              rm(list=ww,pos=1)
               rm(.sdm...temp,pos=1)
             }
             w
@@ -692,51 +696,94 @@ setMethod('sdm', signature(formula='formula',data='sdmdata',methods='character')
 )
 
 #-------------
-.getModel.info <- function(x,w,...) {
+# .getModel.info <- function(x,w,...) {
+#   if (missing(w) || is.null(w)) {
+#     a <- c('species','method','replication','run')
+#     w1 <- w2 <- w3 <- w4 <- TRUE
+#     dot <- list(...)
+#     if (length(dot) > 0) {
+#       ndot <- names(dot)
+#       ndot <- .pmatch(ndot,a)
+#       w <- !is.na(ndot)
+#       ndot <- ndot[w]
+#       dot <- dot[w]
+#       names(dot) <- ndot
+#       for (nd in ndot) {
+#         if (nd == 'species' && !is.null(dot[[nd]])) {
+#           dot[[nd]] <- .pmatch(dot[[nd]],unique(as.character(x@run.info[,2])))
+#           w1 <- x@run.info[,2] %in% dot[[nd]]
+#         } else if (nd == 'method' && !is.null(dot[[nd]])) {
+#           dot[[nd]] <- .methodFix(dot[[nd]])
+#           w2 <- x@run.info[,3] %in% dot[[nd]]
+#         }
+#         else if (nd == 'replication' && !is.null(dot[[nd]])) {
+#           if (length(x@replicates) != 0) {
+#             dot[[nd]] <- .replicate.methodFix(dot[[nd]])
+#             w3 <- x@run.info[,4] %in% dot[[nd]]
+#           }
+#         } else if (nd == 'run' && !is.null(dot[[nd]])) {
+#           if (!is.null(dot[[nd]])) {
+#             if (length(x@replicates) != 0) {
+#               r <- unlist(lapply(x@replicates[[1]],function(x) x$method))
+#               ru <- unique(r)
+#               names(ru) <- ru
+#               rID <- lapply(ru,function(x) which(r == x))
+#               w4 <- c()
+#               for (i in 1:length(rID)) {
+#                 w4 <- c(w4,rID[[i]][c(1:length(rID[[i]])) %in% dot[[nd]]])
+#               }
+#               w4 <- x@run.info[,5] %in% w4
+#             }
+#           }
+#         }
+#       }
+#       x@run.info[w1 & w2 & w3 & w4,]
+#     } else x@run.info
+#   } else x@run.info[x@run.info[,1] %in% w,]
+# }
+#--------
+.getModel.info <- function(x,w=NULL,species=NULL,method=NULL,replication=NULL,run=NULL) {
   if (missing(w) || is.null(w)) {
-    a <- c('species','method','replication','run')
+    
     w1 <- w2 <- w3 <- w4 <- TRUE
-    dot <- list(...)
-    if (length(dot) > 0) {
-      ndot <- names(dot)
-      ndot <- .pmatch(ndot,a)
-      w <- !is.na(ndot)
-      ndot <- ndot[w]
-      dot <- dot[w]
-      names(dot) <- ndot
-      for (nd in ndot) {
-        if (nd == 'species' && !is.null(dot[[nd]])) {
-          dot[[nd]] <- .pmatch(dot[[nd]],unique(as.character(x@run.info[,2])))
-          w1 <- x@run.info[,2] %in% dot[[nd]]
-        } else if (nd == 'method' && !is.null(dot[[nd]])) {
-          dot[[nd]] <- .methodFix(dot[[nd]])
-          w2 <- x@run.info[,3] %in% dot[[nd]]
-        }
-        else if (nd == 'replication' && !is.null(dot[[nd]])) {
-          if (length(x@replicates) != 0) {
-            dot[[nd]] <- .replicate.methodFix(dot[[nd]])
-            w3 <- x@run.info[,4] %in% dot[[nd]]
+    if (!is.null(species)) {
+      species <- .pmatch(species,unique(as.character(x@run.info[,2])))
+      w1 <- x@run.info[,2] %in% species
+    }
+    
+    if (!is.null(method)) {
+      method <- .methodFix(method)
+      w2 <- x@run.info[,3] %in% method
+    }
+    
+    
+    if (!is.null(replication)) {
+      if (length(x@replicates) != 0) {
+        replication <- .replicate.methodFix(replication)
+        w3 <- x@run.info[,4] %in% replication
+      }
+    }
+    
+    if (!is.null(run)) {
+      if (!is.null(run)) {
+        if (length(x@replicates) != 0) {
+          r <- unlist(lapply(x@replicates[[1]],function(x) x$method))
+          ru <- unique(r)
+          names(ru) <- ru
+          rID <- lapply(ru,function(x) which(r == x))
+          w4 <- c()
+          for (i in 1:length(rID)) {
+            w4 <- c(w4,rID[[i]][c(1:length(rID[[i]])) %in% run])
           }
-        } else if (nd == 'run' && !is.null(dot[[nd]])) {
-          if (!is.null(dot[[nd]])) {
-            if (length(x@replicates) != 0) {
-              r <- unlist(lapply(x@replicates[[1]],function(x) x$method))
-              ru <- unique(r)
-              names(ru) <- ru
-              rID <- lapply(ru,function(x) which(r == x))
-              w4 <- c()
-              for (i in 1:length(rID)) {
-                w4 <- c(w4,rID[[i]][c(1:length(rID[[i]])) %in% dot[[nd]]])
-              }
-              w4 <- x@run.info[,5] %in% w4
-            }
-          }
+          
+          w4 <- x@run.info[,5] %in% w4
         }
       }
-      x@run.info[w1 & w2 & w3 & w4,]
-    } else x@run.info
+    }
+    x@run.info[w1 & w2 & w3 & w4,]
   } else x@run.info[x@run.info[,1] %in% w,]
 }
+
 #--------
 
 

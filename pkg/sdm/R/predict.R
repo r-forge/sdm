@@ -113,7 +113,6 @@ if (!isGeneric("predict")) {
   
   mi <- .getModel.info(x,w=w,species=species,method=method,replication=replication,run=run)
   
-  
   s <- mi$success
   
   if (!all(s)) {
@@ -266,24 +265,31 @@ setMethod('predict', signature(object='sdmModels'),
             if (missing(method) || is.null(method)) method <- object@setting@methods
             pkgs <- .sdmMethods$getPackageNames(method)
             
+            
             .sdm...temp <- NULL; rm(.sdm...temp)
             pos <- 1
-            for (i in seq_along(pkgs)) {
-              if ('.temp' %in% pkgs[[i]]) {
-                #if (!".sdmMethods$userFunctions" %in% search()) attach(.sdmMethods$userFunctions)
-                #on.exit(substitute(detach('.sdmMethods$userFunctions')))
-                
-                w <- ls(.sdmMethods$userFunctions)
-                if (length(w) > 0) {
-                  assign('.sdm...temp',c(),envir = as.environment(pos))
-                  for (ww in w) {
-                    if (!exists(ww,where=1)) {
-                      assign(ww,.sdmMethods$userFunctions[[ww]],envir = as.environment(pos))
-                      .sdm...temp <<- c(.sdm...temp,ww)
-                    }
+            
+            tmp <- sapply(pkgs, function(x) '.temp' %in% x)
+            
+            if (any(tmp)) {
+              if (".sdm...temp" %in% ls(pattern='^.sdm..',pos=1,all.names = TRUE)) {
+                ww <- ls(.sdmMethods$userFunctions)
+                rm(list=ww,pos=1)
+                rm(.sdm...temp,pos=1)
+              }
+              #----
+              for (i in which(tmp)) pkgs[[i]] <- pkgs[[i]][which(pkgs[[i]] != '.temp')]
+              #----
+              tmp<- ls(.sdmMethods$userFunctions)
+              
+              if (length(tmp) > 0) {
+                assign('.sdm...temp',c(),envir = as.environment(pos))
+                for (ww in tmp) {
+                  if (!exists(ww,where=1)) {
+                    assign(ww,.sdmMethods$userFunctions[[ww]],envir = as.environment(pos))
+                    .sdm...temp <<- c(.sdm...temp,ww)
                   }
                 }
-                pkgs[[i]] <- pkgs[[i]][-which(pkgs[[i]] == '.temp')]
               }
             }
             
@@ -301,7 +307,6 @@ setMethod('predict', signature(object='sdmModels'),
             b <- NULL
             w <- .generateWLP(x = object,newdata=newdata,w=w,species=species,method=method,replication=replication,run=run,ncore=nc)
             #w <- sdm:::.generateWLP(x = object,newdata=newdata,w=NULL,species=NULL,method=NULL,replication=NULL,run=NULL,ncore=1)
-            #w <- sdm:::.generateWLP(x = object,newdata=newdata,w=NULL,species=NULL,method='fda',replication=NULL,run=NULL,ncore=1)
             
             if (!is.null(w$newdata$raster)) {
               if (filename == '') filename <- .generateName('sdm_prediction')
@@ -510,7 +515,8 @@ setMethod('predict', signature(object='sdmModels'),
             }
             
             if (".sdm...temp" %in% ls(pattern='^.sdm..',pos=1,all.names = TRUE)) {
-              rm(list=.sdm...temp,pos=1)
+              w <- ls(.sdmMethods$userFunctions)
+              rm(list=w,pos=1)
               rm(.sdm...temp,pos=1)
             }
             #if (".sdmMethods$userFunctions" %in% search()) detach('.sdmMethods$userFunctions')

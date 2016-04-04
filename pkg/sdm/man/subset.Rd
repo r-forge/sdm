@@ -45,8 +45,9 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 
 \examples{
 \dontrun{
-file <- system.file("external/model.rds", package="sdm")
-m <- readRDS(file)
+file <- system.file("external/model.sdm", package="sdm")
+
+m <- read.sdm(file)
 
 m
 
