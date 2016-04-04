@@ -50,6 +50,9 @@ setMethod('installAll', signature(pkgs='ANY'),
               p <- pl[!pl %in% c('stats','utils','parallel','base','grDevice','tools','methods','graphics','compiler','datasets','profile','grid')]
               if (length(p) > 0) {
                 .detachPackage(p)
+                pi <- p[.is.installed(p)]
+                if (length(pi) > 0) pi <- try(remove.packages(pi),silent = TRUE)
+                
                 s <- rep(TRUE,length(p))
                 for (i in seq_along(p)) {
                   pi <- try(install.packages(p[i],...),silent = TRUE)
