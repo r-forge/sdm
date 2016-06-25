@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date :  May 2015
-# Version 1.0
+# Date :  June 2016
+# Version 1.1
 # Licence GPL v3
 
 setMethod ('show' , 'sdmdata',
@@ -9,8 +9,8 @@ setMethod ('show' , 'sdmdata',
              cat('===========================================================','\n')
              cat('number of species                     : ' , length(object@species.names) , '\n')
              cat('species names                         : ' , if (length(object@species.names) > 3) paste(c(object@species.names[1:3],'...'),collapse=', ') else paste(object@species.names,collapse=', ') , '\n')
-             cat('number of fearures                    : ' , length(object@features.name), '\n')
-             cat('fearure names                         : ' , if (length(object@features.name) > 0) {
+             cat('number of features                    : ' , length(object@features.name), '\n')
+             cat('feature names                         : ' , if (length(object@features.name) > 0) {
                if (length(object@features.name) > 3) paste(c(object@features.name[1:3],'...'),collapse=', ') else paste(object@features.name,collapse=', ')
              } else NA, '\n')
              if (length(object@factors) > 0) {
