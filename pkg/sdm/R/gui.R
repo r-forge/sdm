@@ -1,12 +1,12 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  July 2016
-# Version 2.2
+# Version 2.3
 # Licence GPL v3
 
 
 
 .wellP <- function(...,style="background:#27242E;color:#fff") {
-  tags$div(class='well',style=style,...)
+  shiny::tags$div(class='well',style=style,...)
 }
 
 if (!isGeneric("gui")) {
