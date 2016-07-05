@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  July 2016
-# Version 2.0
+# Version 2.1
 # Licence GPL v3
 
 
@@ -19,6 +19,8 @@ setMethod('gui', signature('sdmModels'),
           function(x,...) {
             l <- c(require(shiny),require(shinyBS))
             if (!all(l)) stop(paste(paste(c('shiny','shinyBS')[l],collapse=', '),'are not installed; install them or use installAll() function to install all the functions that may be required by some functions in the package...'))
+            
+            if (!.sdmOptions$getOption('sdmLoaded')) .addMethods()
             
             .css <- readRDS(system.file("shinyApps/css.rds", package="sdm"))
             

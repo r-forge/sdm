@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date :  June 2016
-# Version 1.1
+# Date :  July 2016
+# Version 1.2
 # Licence GPL v3
 
 setMethod ('show' , 'sdmdata',
@@ -68,6 +68,7 @@ setMethod ('show' , '.sdmCorSetting',
 
 setMethod ('show' , 'sdmModels',
            function (object) {
+             if (!.sdmOptions$getOption('sdmLoaded')) .addMethods()
              mi <- object@run.info
              for (i in c(2,3)) mi[,i] <- as.character(mi[,i])
              sp <- unique(mi$species)

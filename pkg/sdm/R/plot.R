@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  July. 2016
-# Version 2.1
+# Version 2.2
 # Licence GPL v3
 
 
@@ -18,6 +18,8 @@ setMethod("plot", signature(x='sdmEvaluate'),
               y <- .pmatch(y,ar)[1]
               if (is.na(y)) stop('when x is a sdmEvaluate object, y should be a statistic to plot, the name in the y is not recognised!')
             }
+            
+            if (!.sdmOptions$getOption('sdmLoaded')) .addMethods()
             
             if (y == 'roc') {
               r <- .roc(x@observed,x@predicted)
