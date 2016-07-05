@@ -1,4 +1,4 @@
-import(sp,methods)
+import(sp,methods, shiny)
 importFrom("graphics", "abline", "legend", "par", "points","lines","boxplot")
 importFrom("stats", "as.formula", "cor", "cov", "formula", "glm",
              "mahalanobis", "predict.glm", "supsmu", "terms",

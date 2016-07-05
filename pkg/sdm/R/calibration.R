@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  July. 2016
-# Version 1.0
+# Version 1.1
 # Licence GPL v3
 
 
@@ -91,7 +91,7 @@ setMethod("calibration", signature(x='vector',p='vector'),
           }
 )
 
-setMethod("calibration", signature(x='sdmEvaluate'),
+setMethod("calibration", signature(x='sdmEvaluate','missing'),
           function(x,p,nbin,weight,...) {
             
             if (missing(weight)) weight <- TRUE

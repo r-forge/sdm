@@ -2,7 +2,7 @@
 
 \alias{calibration}
 \alias{calibration,vector,vector-method}
-\alias{calibration,sdmEvaluate-method}
+\alias{calibration,sdmEvaluate,missing-method}
 
 \title{Calibration}
 
