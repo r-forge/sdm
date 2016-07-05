@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  July 2016
-# Version 2.3
+# Version 2.4
 # Licence GPL v3
 
 
@@ -30,7 +30,7 @@ setMethod('gui', signature('sdmModels'),
             wtSel <- c()
             
             thStats <- names(getEvaluation(x,w=x@run.info[which(x@run.info[,7])[1],1],stat=2,wtest='training'))
-            
+            thStats <- thStats[2:length(thStats)]
             
             ui <- fluidPage(
               shiny::tags$head(.css),
@@ -185,13 +185,7 @@ setMethod('gui', signature('sdmModels'),
                   } else if (input$plotType == 'Boxplot') {
                     if (!is.null(input$modelID5)) w <- which(x@run.info$modelID == input$modelID5)
                   } 
-                } else if (input$Statistic == 'threshold-based') {
-                  if (!is.null(input$modelID6)) w <- which(x@run.info$modelID == input$modelID6)
-                } else if (input$Statistic == 'threshold-independent') {
-                  if (!is.null(input$modelID7)) w <- which(x@run.info$modelID == input$modelID7)
-                }
-                
-                
+                } 
                 if (!is.null(w)) c(species=as.character(x@run.info[w,"species"]), method=as.character(x@run.info[w,"method"]),replication=as.character(x@run.info[w,"replication"]))
                 
               })
@@ -300,35 +294,44 @@ setMethod('gui', signature('sdmModels'),
                   }
                   
                 } else if (input$Statistic == 'threshold-based') {
-                  updateTextInput(session,'species_name5',value=as.character(single_model_info()[1]))
-                  updateTextInput(session,'model_name5',value=as.character(single_model_info()[2]))
-                  updateTextInput(session,'replication_name5',value=as.character(single_model_info()[3]))
-                  updateSelectInput(session,'modelID6',selected = input$modelID6)
-                  
-                  output$thTable <- renderTable({
-                    getEvaluation(x,w=as.numeric(input$modelID6),stat=2,wtest=as.character(input$wtest6))
-                  })
+                  if (!is.null(input$modelID6)) {
+                    w <- which(x@run.info$modelID == input$modelID6)
+                    sinfo <- as.character(c(species=as.character(x@run.info[w,"species"]), method=as.character(x@run.info[w,"method"]),replication=as.character(x@run.info[w,"replication"])))
+                    updateTextInput(session,'species_name5',value=as.character(sinfo[1]))
+                    updateTextInput(session,'model_name5',value=as.character(sinfo[2]))
+                    updateTextInput(session,'replication_name5',value=as.character(sinfo[3]))
+                    updateSelectInput(session,'modelID6',selected = input$modelID6)
+                    
+                    output$thTable <- renderTable({
+                      getEvaluation(x,w=as.numeric(input$modelID6),stat=2,wtest=as.character(input$wtest6))
+                    })
+                  }
                   
                 } else if (input$Statistic == 'threshold-independent') {
-                  updateTextInput(session,'species_name6',value=as.character(single_model_info()[1]))
-                  updateTextInput(session,'model_name6',value=as.character(single_model_info()[2]))
-                  updateTextInput(session,'replication_name6',value=as.character(single_model_info()[3]))
-                  updateSelectInput(session,'modelID7',selected = input$modelID7)
-                  
-                  s1 <- getEvaluation(x,w=as.numeric(input$modelID7),stat=1,wtest=as.character(input$wtest7))
-                  sinfo <- as.character(single_model_info())
-                  s2 <- NULL
-                  if (length(sinfo) != 0) {
-                    ev <- x@models[[sinfo[1]]][[sinfo[2]]][[as.character(input$modelID7)]]@evaluation[[as.character(input$wtest7)]]
-                    s2 <- calibration(ev)@statistic
+                  if (!is.null(input$modelID7)) {
+                    w <- which(x@run.info$modelID == input$modelID7)
+                    sinfo <- as.character(c(species=as.character(x@run.info[w,"species"]), method=as.character(x@run.info[w,"method"]),replication=as.character(x@run.info[w,"replication"])))
+                    updateTextInput(session,'species_name6',value=as.character(sinfo[1]))
+                    updateTextInput(session,'model_name6',value=as.character(sinfo[2]))
+                    updateTextInput(session,'replication_name6',value=as.character(sinfo[3]))
+                    updateSelectInput(session,'modelID7',selected = input$modelID7)
+                    
+                    s1 <- getEvaluation(x,w=as.numeric(input$modelID7),stat=1,wtest=as.character(input$wtest7))
+                    
+                    s2 <- NULL
+                    
+                    if (length(sinfo) != 0) {
+                      ev <- x@models[[sinfo[1]]][[sinfo[2]]][[as.character(input$modelID7)]]@evaluation[[as.character(input$wtest7)]]
+                      s2 <- calibration(ev)@statistic
+                    }
+                    df <- data.frame(matrix(nrow=5,ncol=2))
+                    colnames(df) <- c('Statistic','Value')
+                    df[,1] <- c(names(s1),'Calibrartion')
+                    df[,2] <- c(s1[[1]],s1[[2]],s1[[3]][1],s1[[4]],s2)
+                    output$thTable2 <- renderTable({
+                      df
+                    })
                   }
-                  df <- data.frame(matrix(nrow=5,ncol=2))
-                  colnames(df) <- c('Statistic','Value')
-                  df[,1] <- c(names(s1),'Calibrartion')
-                  df[,2] <- c(s1[[1]],s1[[2]],s1[[3]][1],s1[[4]],s2)
-                  output$thTable2 <- renderTable({
-                    df
-                  })
                   
                 }
                 
@@ -357,3 +360,4 @@ setMethod('gui', signature('sdmModels'),
             
           }
 )
+

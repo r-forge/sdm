@@ -1,7 +1,7 @@
 Package: sdm
 Type: Package
 Title: Species Distribution Modelling
-Version: 1.0-16
+Version: 1.0-18
 Date: 2016-07-5
 Author: Babak Naimi, Miguel B. Araujo
 Maintainer: Babak Naimi <naimi.b@gmail.com>
