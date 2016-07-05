@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date :  April 2016
-# Version 3.2
+# Date :  July 2016
+# Version 3.3
 # Licence GPL v3
 
 
@@ -1316,3 +1316,12 @@ setRefClass(".sdmOptions",
             )
 )
 .sdmOptions <- new('.sdmOptions')
+
+#-------
+
+setClass(".sdmCalibration",
+         representation(
+           statistic='numeric',
+           calibration='data.frame'
+         )
+)
