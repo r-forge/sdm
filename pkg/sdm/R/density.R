@@ -11,7 +11,7 @@ if (!isGeneric("density")) {
 
 
 setMethod('density', signature(x='sdmEvaluate'), 
-          function(x,xlab,ylim,col,lwd,lty,main,...) {
+          function(x,xlab,xlim,ylim,col,lwd,lty,main,...) {
             if (missing(xlab)) xlab <- 'Predicted Probabilities'
             if (missing(ylim)) ylim <- NULL
             if (missing(xlim)) xlim <- c(0,1)
@@ -34,7 +34,7 @@ setMethod('density', signature(x='sdmEvaluate'),
             if (length(w1) > 0) {
               d1 <- density(p[w1])
               if (length(w2) > 0) {
-                d2 <- density(p[w2],bw=d$bw)
+                d2 <- density(p[w2],bw=d1$bw)
                 if (is.null(ylim)) ylim <- c(0,max(c(d1$y,d2$y)))
                 plot(d1,col=col[1],xlim=xlim,lwd=lwd,main=main,xlab=xlab,ylim=ylim,...)
                 lines(d2,col=col[2],lwd=lwd)
