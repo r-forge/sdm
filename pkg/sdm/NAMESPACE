@@ -16,5 +16,5 @@ importFrom("raster",  "raster", "brick","cellFromXY","ncell","trim","extract","e
 #           "verbatimTextOutput","selectizeInput","updateCheckboxGroupInput","tableOutput","textInput","selectInput")
 exportClasses(sdmdata, sdmFormula,sdmEvaluate,sdmModels,sdmCorrelativeMethod)
 exportMethods(sdmData,sdm,sdmSetting,evaluates,roc,getRoc,add,getmethodNames,getmethod,getModelInfo,
-              getEvaluation,read.sdm,write.sdm,installAll,gui)
+              getEvaluation,read.sdm,write.sdm,installAll,gui,getVarImp)
 exportPattern("^[^\\.]")

@@ -151,6 +151,36 @@ setMethod("plot", signature(x='.sdmCalibration'),
 )
 #-------
 
+
+setMethod("plot", signature(x='.varImportance'),
+          function(x,y,...) {
+            if (missing(y)) y <- 'corTest'
+            else {
+              y <- y[1]
+              if (is.character(y)) y <- .pmatch(y,c('corTest','AUCtest'))
+              else if (is.numeric(y)) {
+                if (!y %in% c(1,2)) {
+                  y <- 'corTest'
+                  warning('y should be 1 or 2, it is changed to 1 (i.e., corTest)')
+                } else y <- c('corTest','AUCtest')[y]
+              } else {
+                y <- 'corTest'
+                warning('y is not identified... default is used (i.e., corTest)')
+              }
+            }
+            
+            dot <- list(...)
+            ndot <- names(dot)
+            if (!'xlab' %in% ndot) dot[['xlab']] <- "Relative Variable Importance"
+            if (!'horiz' %in% ndot) dot[['horiz']] <- TRUE
+            if (!'names.arg' %in% ndot) dot[['names.arg']] <- x@variables
+            if (!'col' %in% ndot) dot[['col']] <-'#DDE9EB'
+            dot[['height']] <- x@varImportance[,y]
+            
+            do.call(barplot,dot)
+          }
+)
+#-------
 if (!isGeneric("boxplot")) {
   setGeneric("boxplot", function(x, ...)
     standardGeneric("boxplot"))
