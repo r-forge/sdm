@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  July 2016
-# Version 2.6
+# Version 2.7
 # Licence GPL v3
 
 
@@ -20,7 +20,7 @@
     for (i in 1:nsim) {
       pv[[2]][,v] <- dd[sample(nrow(dd)),v]
       d2 <- pred(pv)
-      cr <- cor(d1,d2)
+      cr <- cor(d1,d2,use="complete.obs")
       if (cr < 0) cr <- 0
       vi[i] <- 1 - cr
       a2 <- .auc(obs,d2)
@@ -29,8 +29,8 @@
       else if (a2 < 0) a2 <- 0
       vj[i] <- a2
     }
-    varImp1[v] <- mean(vi,na.rm=TRUE)
-    varImp2[v] <- mean(vj,na.rm=TRUE)
+    varImp1[v] <- round(mean(vi,na.rm=TRUE),4)
+    varImp2[v] <- round(mean(vj,na.rm=TRUE),4)
     pv[[2]] <- dd
   }
   new('.varImportance',variables=ww,varImportance=data.frame(variables=ww,corTest=varImp1,AUCtest=varImp2))
