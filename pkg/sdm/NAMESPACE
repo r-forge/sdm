@@ -1,5 +1,5 @@
 import(sp,methods)
-importFrom("graphics", "abline", "legend", "par", "points","lines","boxplot")
+importFrom("graphics", "abline", "legend", "par", "points","lines","boxplot","barplot")
 importFrom("stats", "as.formula", "cor", "cov", "formula", "glm",
              "mahalanobis", "predict.glm", "supsmu", "terms",
              "wilcox.test","princomp","plogis","model.frame","model.matrix",
