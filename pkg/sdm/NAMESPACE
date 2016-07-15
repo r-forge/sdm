@@ -8,12 +8,6 @@ importFrom("stats", "as.formula", "cor", "cov", "formula", "glm",
 importFrom("utils", "combn", "data", "read.csv","object.size","install.packages","remove.packages")
 importFrom("raster",  "raster", "brick","cellFromXY","ncell","trim","extract","extent","as.data.frame","predict",
            "writeRaster","calc","addLayer","setZ","extension","sampleRandom","values","subset","update")
-
-#importFrom("shiny","fluidRow","fluidPage","column","tabPanel","tabsetPanel","actionButton","checkboxGroupInput",
-#           "plotOutput","updateTextInput","uiOutput","updateSelectInput","updateSelectizeInput",
-#           "div","h3","HTML","shinyApp","icon","navbarPage","observe","observeEvent",
-#           "runApp","renderUI","renderPlot","renderTable","renderPrint","reactive","radioButtons",
-#           "verbatimTextOutput","selectizeInput","updateCheckboxGroupInput","tableOutput","textInput","selectInput")
 exportClasses(sdmdata, sdmFormula,sdmEvaluate,sdmModels,sdmCorrelativeMethod)
 exportMethods(sdmData,sdm,sdmSetting,evaluates,roc,getRoc,add,getmethodNames,getmethod,getModelInfo,
               getEvaluation,read.sdm,write.sdm,installAll,gui,getVarImp)

@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  July 2016
-# Version 1.3
+# Version 1.4
 # Licence GPL v3
 
 setMethod ('show' , 'sdmdata',
@@ -107,11 +107,14 @@ setMethod ('show' , 'sdmModels',
                }
                o
              }
+             
              a <- ''
-             aa <- length(unlist(strsplit(i,'')))
-             la <- 15
-             if (length(aa) >= 15) la <- length(aa) + 3
-             for (i in sp) a <- paste(a,i,paste(rep(' ',la - aa),collapse=''),collapse='')
+             for (i in sp) {
+               aa <- length(unlist(strsplit(i,'')))
+               la <- 15
+               if (length(aa) >= 15) la <- length(aa) + 3
+               a <- paste(a,i,paste(rep(' ',la - aa),collapse=''),collapse='')
+              }
              cat(paste('method        ',a,collapse='|'),'\n')
              cat(paste(rep('-',length(unlist(strsplit(a,'')))+5),collapse=''),'\n')
              
