@@ -109,17 +109,26 @@ setMethod ('show' , 'sdmModels',
              }
              
              a <- ''
+             a2 <- c()
              for (i in sp) {
                aa <- length(unlist(strsplit(i,'')))
                la <- 15
-               if (length(aa) >= 15) la <- length(aa) + 3
+               if (aa >= 15) la <- aa + 3
                a <- paste(a,i,paste(rep(' ',la - aa),collapse=''),collapse='')
-              }
+               a2 <- c(a2,la)
+             }
+             a2 <- a2 - 3
              cat(paste('method        ',a,collapse='|'),'\n')
              cat(paste(rep('-',length(unlist(strsplit(a,'')))+5),collapse=''),'\n')
-             
              for (i in seq_along(mo)) {
-               cat(paste(mo[i],paste(rep(' ',10 - length(unlist(strsplit(mo[i],'')))),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , paste(p2(mo[i]),collapse='       |     '), '%\n')
+               a3 <- c()
+               a4 <- ''
+               p2.mo <- p2(mo[i])
+               for (j in 1:(length(a2)-1)) a3 <- c(a3,paste(paste(rep(' ',a2[j]/2),collapse=''),'|',paste(rep(' ',a2[j+1]/2),collapse=''),collapse=''))
+               a3 <- c(paste(rep(' ',a2[1]/2-2),collapse=''),a3)
+               for (j in 1:length(a2)) a4 <- paste(c(a4,a3[j],p2.mo[i]),collapse='')
+               cat(paste(mo[i],paste(rep(' ',10 - length(unlist(strsplit(mo[i],'')))),collapse=''),' : ',paste(rep(' ',3),collapse=''),a4,sep='')  , '  %\n')
+               #cat(paste(mo[i],paste(rep(' ',10 - length(unlist(strsplit(mo[i],'')))),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , paste(p2(mo[i]),collapse='       |     '), '%\n')
              }
              wtest <- colnames(mi)[9:7][which(as.matrix(mi[1,c(9,8,7)]))[1]]
              

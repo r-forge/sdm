@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date :  June 2016
-# Version 1.1
+# Date :  Oct. 2016
+# Version 1.2
 # Licence GPL v3
 #--------
 
@@ -396,14 +396,21 @@ setMethod('evaluates', signature(x='vector',p='vector'),
   names(s1) <- s1
   names(s2) <- s2
   
+  ws <- vector('list',length(c(s1,s2))) # for the case of NA in the evaluation
+  names(ws) <- c(s1,s2)
+  ws[] <- NA
   for (i in id) {
     sp <- mi[i,2]
     mo <- mi[i,3]
-    if (!is.null(s1)) {
-      o[[i]] <- lapply(s1,function(j) x@models[[sp]][[mo]][[i]]@evaluation[[wtest]]@statistics[[j]][[1]])
-    }
-    if (!is.null(s2)) {
-      o[[i]] <- c(o[[i]],lapply(s2,function(j) x@models[[sp]][[mo]][[i]]@evaluation[[wtest]]@threshold_based[opt,j]))
+    if (!is.null(x@models[[sp]][[mo]][[i]]@evaluation[[wtest]])) {
+      if (!is.null(s1)) {
+        o[[i]] <- lapply(s1,function(j) x@models[[sp]][[mo]][[i]]@evaluation[[wtest]]@statistics[[j]][[1]])
+      }
+      if (!is.null(s2)) {
+        o[[i]] <- c(o[[i]],lapply(s2,function(j) x@models[[sp]][[mo]][[i]]@evaluation[[wtest]]@threshold_based[opt,j]))
+      }
+    } else {
+      o[[i]] <- c(o[[i]],ws)
     }
   }
   o
