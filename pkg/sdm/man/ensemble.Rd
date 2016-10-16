@@ -4,6 +4,7 @@
 \docType{methods}
 
 \alias{ensemble}
+\alias{ensemble,sdmModels-method}
 \alias{ensemble,sdmModels,Raster-method}
 
 \title{Ensemble Forecasting of SDMs}
