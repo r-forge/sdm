@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date (last update):  Nov. 2016
-# Version 2.4
+# Version 2.5
 # Licence GPL v3
 
 
@@ -246,23 +246,31 @@ if (!isGeneric("predict")) {
             }
           }
         }
-        
-        if (nrow(o) > 0) {
-          for (n in as.character(unique(o[,1]))) {
-            wn <- which(o$f == n)
-            oc <- o[wn,]
-            u <- as.character(unique(oc[,2]))
-            un <- as.character(unique(o[wn,3]))
-            for (uu in u) {
-              wc <- which(oc$old == uu)
-              nc <- .domClass(as.character(oc$new[wc]))
-              if (nc[1] %in% u && length(nc) > 1) nc <- nc[2]
-              else nc <- nc[1]
-              ww <- which(w$modelFrame$features[,n] == uu)
-              w$modelFrame$features[ww,n] <- nc
-            }
-            w$modelFrame$features[,n] <- factor(w$modelFrame$features[,n])
+      } else {
+        ddd <- .factorFixW(d1,d2,nf = nf,nFact=nFact)
+        o <- data.frame(matrix(ncol=3,nrow=0))
+        if (length(ddd) > 0) {
+          for (i in seq_along(ddd)) {
+            o <- rbind(o,data.frame(f=ddd[[i]][[1]],old=ddd[[i]][[2]],new=ddd[[i]][[3]]))
           }
+        }
+      }
+      
+      if (nrow(o) > 0) {
+        for (n in as.character(unique(o[,1]))) {
+          wn <- which(o$f == n)
+          oc <- o[wn,]
+          u <- as.character(unique(oc[,2]))
+          un <- as.character(unique(o[wn,3]))
+          for (uu in u) {
+            wc <- which(oc$old == uu)
+            nc <- .domClass(as.character(oc$new[wc]))
+            if (nc[1] %in% u && length(nc) > 1) nc <- nc[2]
+            else nc <- nc[1]
+            ww <- which(w$modelFrame$features[,n] == uu)
+            w$modelFrame$features[ww,n] <- nc
+          }
+          w$modelFrame$features[,n] <- factor(w$modelFrame$features[,n])
         }
       }
     }
