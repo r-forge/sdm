@@ -203,7 +203,7 @@ getZ(p2m)
 ```
 ## Ensemble forecasting
 
-Studies have shown that predictions or projections by alternative models can be so variable that challenge the common practice of relying on one single method. A solution is to utilize several models (‘ensembles’) and use appropriate techniques to explore the resulting range of projections. Significant improvements on the robustness of a forecast can be achieved if an ensemble approach is used and the results analysed appropriately.
+Studies have shown that predictions or projections by alternative models can be so variable that challenge the common practice of relying on one single method. A solution is to utilize several models ('ensembles') and use appropriate techniques to explore the resulting range of projections. Significant improvements on the robustness of a forecast can be achieved if an ensemble approach is used and the results analysed appropriately.
 
 In the sdm package, the ensemble function can be used to generate an ensemble prediction or forecast based on the multiple models that are used in the sdm function. Several methods are implemented and can be used by a user in a flexible way. Here is an example:
 
