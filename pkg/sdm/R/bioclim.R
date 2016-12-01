@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date (last update):  Nov. 2016
-# Version 1.0
+# Version 1.1
 # Licence GPL v3
 
 #-------------
@@ -43,7 +43,7 @@ setMethod('predict', signature(object='.bioclimModel'),
             if (is.null(object@weights) || length(object@weights) != length(object@features)) out <- apply(out,1,mean,na.rm=TRUE)
             else {
               object@weights <- object@weights / sum(object@weights)
-              out <- apply(out,1,function(x) x*object@weights)
+              out <- apply(out,1,function(x) sum(x*object@weights))
             }
             out * w0
           }
