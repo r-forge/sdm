@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Nov. 2016
-# Version 3.5
+# Date (last update):  July 2017
+# Version 3.7
 # Licence GPL v3
 
 
@@ -716,7 +716,9 @@ setClass('.sdmCorSetting',
            varImportance.methods='characterORnull',
            var.selection='logical',
            response.curve='logical',
+           modelSettings='listORnull',
            ncore='numeric',
+           seed='numericORnull',
            errorLog='list'
          )
 )
@@ -724,7 +726,8 @@ setClass('.sdmVariables',
          representation(
            response='character',
            numeric.vars='characterORnull',
-           factors='characterORnull'
+           factors='characterORnull',
+           number.of.records='numeric'
          )
 )
 #-------------------
@@ -944,7 +947,7 @@ setRefClass(".workload",
                     nFact <- names(nFact)[which(nFact)]
                     if (length(nFact) == 0) nFact <- NULL
                   }
-                  .self$sdmVariables[[sp]] <- new('.sdmVariables',response=sp,numeric.vars=.excludeVector(colnames(.self$train[[sp]]$sdmDataFrame),c(sp,nFact)),factors=nFact)
+                  .self$sdmVariables[[sp]] <- new('.sdmVariables',response=sp,numeric.vars=.excludeVector(colnames(.self$train[[sp]]$sdmDataFrame),c(sp,nFact)),factors=nFact,number.of.records=if (is.null(.self$test)) nrow(.self$train[[sp]]$sdmDataFrame) else c(train=nrow(.self$train[[sp]]$sdmDataFrame),test=nrow(.self$test[[sp]]$sdmDataFrame)))
                   .self$sdmVariables[[sp]]
                 }
               },
@@ -997,14 +1000,29 @@ setRefClass(".workload",
                         n[[i]] <- model.matrix(.getFormula(colnames(.self$train[[sp]]$sdmDataFrame),env=parent.frame(2)),.normalize(.self$test[[sp]]$sdmDataFrame,except=sp))[,-1]
                       }
                     } #else 'sdmMatrix.norm'
+                  } else if (n[[i]] == 'sdmdata') {
+                    n[[i]] <- .self$data
+                  } else if (n[[i]] == 'sdmNrRecords') {
+                    if (data) {
+                      if (is.null(names(.self$replicates))) {
+                        n[[i]] <- list(train=nrow(.self$train[[sp]]$sdmDataFrame),test=if (is.null(.self$test)) 0 else nrow(.self$test[[sp]]$sdmDataFrame),replicates=NULL)
+                      } else {
+                        .re <- list()
+                        for (.r in .self$setting@replicate) {
+                          .w <- which(unlist(lapply(.self$replicates[[sp]],function(x) x$method== .r)))[1]
+                          .re[[.r]] <- c(train=length(.self$replicates[[sp]][[.w]]$train),test=length(.self$replicates[[sp]][[.w]]$test))
+                        }
+                        n[[i]] <- list(train=nrow(.self$train[[sp]]$sdmDataFrame),test=if (is.null(.self$test)) 0 else nrow(.self$test[[sp]]$sdmDataFrame),replicates=.re)
+                      }
+                    }
                   } else if (n[[i]] == 'sdmRaster') {
                     #####
                     if (data) {
                       ###
                     } #else 'sdmRaster'
                     
-                  } else if (n[[i]] %in% names(.self$params[[sp]])) {
-                    n[[i]] <- .self$params[[sp]][[n[[i]]]]
+                  } else if (n[[i]] %in% names(.self$params)) {
+                    n[[i]] <- do.call(.self$params[[n[[i]]]],generateParams(.CharVector2List(names(formals(.self$params[[n[[i]]]]))),sp)) 
                   }
                 }
                 n
@@ -1274,7 +1292,7 @@ setRefClass(".workloadP",
                   #####
                   
                 } else if (n %in% names(.self$params)) {
-                  .self$params[[n]]
+                  do.call(.self$params[[n]],generateParams(.CharVector2List(names(formals(.self$params[[n]]))),sp)) 
                 }
               },
               getReseved.names=function() {

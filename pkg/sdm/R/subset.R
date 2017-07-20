@@ -1,6 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  Feb. 2015
-# Version 1.0
+# Last update: June 2017
+# Version 1.1
 # Licence GPL v3
 
 .deleteRecords <- function(x,id) {
@@ -199,7 +200,7 @@
 setMethod("[", c("sdmdata"),
           function(x, i, ...,drop=FALSE) {
             if (missing(i)) stop('i is missing!')
-            if(drop) .getDataFame(x,i)
+            if(drop) .getDataFame(x,i,...)
             else .subsetRecords(x,i)
           }
 )

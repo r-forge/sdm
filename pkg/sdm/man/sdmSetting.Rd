@@ -13,7 +13,7 @@ Creates sdmSetting object that holds settings to fit and evaluate the models. It
 \usage{
 sdmSetting(formula,data,methods,interaction.depth=1,n=1,replication=NULL,cv.folds=NULL,
      test.percent=NULL,bg=NULL,bg.n=NULL,var.importance=NULL,response.curve=TRUE,
-     var.selection=FALSE,ncore=1L,...)
+     var.selection=FALSE,ncore=1L,modelSettings=NULL,seed=NULL,...)
 
 
 }
@@ -33,10 +33,14 @@ sdmSetting(formula,data,methods,interaction.depth=1,n=1,replication=NULL,cv.fold
   \item{response.curve}{method to calculate variable importance}
   \item{var.selection}{logical, whether variable selection should be considered}
   \item{ncore}{number of cores to parallelize processing}
+  \item{modelSettings}{optional list; settings for modelling methods can be specified by users}
+  \item{seed}{default is NULL; either logical specify whether a seed for random number generator should be considered, or a numerical to specify the exact seed number}
   \item{...}{additional arguments}
   }
 \details{
-using sdmSetting, the feature types, interaction.depth and all settings of the model can be defined.
+using sdmSetting, the feature types, interaction.depth and all settings of the model can be defined. This function generate a sdmSetting object that can be specifically helpful for reproducibility. The object can be shared by a user that may be used for other studies.
+
+If a user aims to reproduce the same results for every time the code is running with the same data and settings, a seed number should be specified. Through the \code{seed} argument, a user can specify \code{NULL}, means a seed should not be set (if a random sampling is incorporated in the modelling procedure, for different runs the results would be different); \code{TRUE}, means a seed should be set (the seed number is randomly selected and used everytime the same setting is incorporated); \code{a number}, means the seed will be set to the number specified by the user. 
 }
 
 \value{

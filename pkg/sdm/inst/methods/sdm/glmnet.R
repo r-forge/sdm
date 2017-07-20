@@ -1,6 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  March. 2016
-# Version 1.0
+# last update: July 2017
+# Version 1.1
 # Licence GPL v3
 
 #-------------
@@ -17,10 +18,8 @@ methodInfo <- list(name=c('glmnet','GLMNET','glmelastic','glmlasso'),
                      glmnet(x=x,y=y,family=family,lambda=m$lambda.1se,...)
                    },
                    settingRules = function(x,fitSettings,predictSettings) {
-                     if (x@distribution == 'ab') {
-                       fitSettings[['family']] <- 'poisson'
-                     } else if (x@distribution == 'n') {
-                       fitSettings[['family']] <- 'multinomial'
+                     if (x@distribution[1] %in% c('poisson','multinomial') ) {
+                       fitSettings[['family']] <- x@distribution[1]
                      }
                      list(fitSettings=fitSettings,predictSettings=predictSettings)
                    },
