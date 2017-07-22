@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date (last update):  July 2017
-# Version 2.7
+# Version 2.9
 # Licence GPL v3
 #--------
 
@@ -23,8 +23,11 @@
   n
 }
 #----------
-.getSpeciesDistribution <- function(data) {
-  o <- lapply(data@species,function(x) {
+.getSpeciesDistribution <- function(data,sp=NULL) {
+  if (!is.null(sp)) sp <- data@species[sp]
+  else sp <- data@species
+  
+  o <- lapply(sp,function(x) {
     if (!is.null(x@presence)) return('binomial')
     else if (!is.null(x@abundance)) return('poisson')
     else if (!is.null(x@Multinomial)) return('multinomial')
@@ -410,15 +413,79 @@
       }
     }
   }
-  
+  #------------
   w$funs[['fit']] <- .sdmMethods$getFitFunctions(s@methods)
   w$arguments[['fit']] <- .sdmMethods$getFitArguments(s@methods)
   w$funs[['predict']] <- .sdmMethods$getPredictFunctions(s@methods)
   w$arguments[['predict']] <- .sdmMethods$getPredictArguments(s@methods)
+  #---
+  #------ applying the setting rules & overriding the user settings:
+  for (mo in w$setting@methods) {
+    .u <- NULL
+    if (!is.null(w$setting@modelSettings) && mo %in% names(w$setting@modelSettings)) {
+      .u <- w$setting@modelSettings[[mo]]
+    }
+    for (sp in names(w$train)) {
+      w$arguments[['overriden_settings']][['fit']][[mo]][[sp]] <- w$arguments$fit[[mo]]$settings
+      w$arguments[['overriden_settings']][['predict']][[mo]][[sp]] <- w$arguments$predict[[mo]]$settings
+      #-------
+      .set <- w$setRules(mo,sp)
+      if (!is.null(.set)) {
+        if ('fitSettings' %in% names(.set)) {
+          w$arguments[['overriden_settings']][['fit']][[mo]][[sp]][names(.set[['fitSettings']])] <- .set[['fitSettings']]
+        }
+        
+        if ('predictSettings' %in% names(.set)) {
+          w$arguments[['overriden_settings']][['predict']][[mo]][[sp]][names(.set[['predictSettings']])] <- .set[['predictSettings']]
+        }
+      }
+      #-------
+      if (!is.null(.u)) {
+        if (any(names(.u) %in% c('fitSettings','fitSetting','fitsetting','fitset','FitSetting','FitSettings','predictSettings','predictSetting','predictsetting','predictset','PredictSetting','PredictSettings'))) {
+          .w <- which(names(.u) %in% c('fitSettings','fitSetting','fitsetting','fitset','FitSetting','FitSettings'))
+          if (length(.w) == 1) {
+            if (is.list(.u[[.w]])) {
+              .ww <- names(.u[[.w]]) %in% names(w$arguments[['overriden_settings']][['fit']][[mo]][[sp]])
+              if (any(.ww)) {
+                w$arguments[['overriden_settings']][['fit']][[mo]][[sp]][names(.u[[.w]])[.ww]] <- .u[[.w]][.ww]
+                if (any(!.ww)) w$arguments[['overriden_settings']][['fit']][[mo]][[sp]] <- c(w$arguments[['overriden_settings']][['fit']][[mo]][[sp]],.u[[.w]][!.ww])
+              } else w$arguments[['overriden_settings']][['fit']][[mo]][[sp]] <- c(w$arguments[['overriden_settings']][['fit']][[mo]][[sp]],.u[[.w]])
+            }
+            .u <- .u[-.w]
+          }
+          #------
+          .w <- which(names(.u) %in% c('predictSettings','predictSetting','predictsetting','predictset','PredictSetting','PredictSettings'))
+          if (length(.w) == 1) {
+            if (is.list(.u[[.w]])) {
+              .ww <- names(.u[[.w]]) %in% names(w$arguments[['overriden_settings']][['predict']][[mo]][[sp]])
+              if (any(.ww)) {
+                w$arguments[['overriden_settings']][['predict']][[mo]][[sp]][names(.u[[.w]])[.ww]] <- .u[[.w]][.ww]
+                if (any(!.ww)) w$arguments[['overriden_settings']][['predict']][[mo]][[sp]] <- c(w$arguments[['overriden_settings']][['predict']][[mo]][[sp]],.u[[.w]][!.ww])
+              } else w$arguments[['overriden_settings']][['predict']][[mo]][[sp]] <- c(w$arguments[['overriden_settings']][['predict']][[mo]][[sp]],.u[[.w]])
+            }
+            .u <- .u[-.w]
+          }
+        }
+        #------
+        if (length(.u) > 0) {
+          
+          .ww <- names(.u) %in% names(w$arguments[['overriden_settings']][['fit']][[mo]][[sp]])
+          if (any(.ww)) {
+            w$arguments[['overriden_settings']][['fit']][[mo]][[sp]][names(.u)[.ww]] <- .u[.ww]
+            if (any(!.ww)) w$arguments[['overriden_settings']][['fit']][[mo]][[sp]] <- c(w$arguments[['overriden_settings']][['fit']][[mo]][[sp]],.u[!.ww])
+          } else w$arguments[['overriden_settings']][['fit']][[mo]][[sp]] <- c(w$arguments[['overriden_settings']][['fit']][[mo]][[sp]],.u)
+        }
+      }
+    }
+  }
+  
+  #-------------
+  
   #w$dataObject.names <- unique(unlist(lapply(s@methods, .sdmMethods$getDataArgumentNames)))
   mo <- s@methods
   names(mo) <- mo
   w$dataObject.names <- lapply(mo, .sdmMethods$getDataArgumentNames)
+  w$settingRules <- lapply(mo,function(x) .sdmMethods$Methods[[x]]@settingRules)
   #-----------
   
   #reserved.names <- w$getReseved.names()
@@ -717,7 +784,7 @@ setMethod('sdmSetting', signature(formula='ANY','sdmdata','character'),
                 dot <- dot[-which(ndot == '')]
                 ndot <- names(dot)
               }
-              
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
               a <- c('interaction.depth','replication','cv.folds','test.percent','bg','bg.n','var.importance','response.curve','var.selection','ncore','modelSettings','seed')
               ndot <- .pmatch(ndot,a)
               w <- !is.na(ndot)
@@ -760,7 +827,6 @@ setMethod('sdmSetting', signature(formula='ANY','sdmdata','character'),
             m <- unique(m)
             #---------
             s <- new('.sdmCorSetting',methods=m)
-            s@distribution <- .getSpeciesDistribution(data)
             #---------
             if (missing(formula)) {
               if (!is.null(sobj)) {
@@ -783,6 +849,8 @@ setMethod('sdmSetting', signature(formula='ANY','sdmdata','character'),
             }
             
             s@featuresFrame <- .getFeaturetype(data,s@sdmFormula)  
+            #---------
+            s@distribution <- .getSpeciesDistribution(data,sp=s@sdmFormula@species)
             #---------
             if (!is.null(test.percent)) s@test.percentage <- test.percent
             else {
@@ -929,9 +997,9 @@ if (!isGeneric("sdm")) {
     standardGeneric("sdm"))
 }
 
-setMethod('sdm', signature(formula='formula',data='sdmdata',methods='character'), 
+setMethod('sdm', signature(formula='ANY',data='sdmdata',methods='character'), 
           function(formula,data,methods,...) {
-            a <- c('interaction.depth','n','replication','cv.folds','test.percent','bg','bg.n','var.importance','response.curve','var.selection','setting','ncore')
+            a <- c('interaction.depth','n','replication','cv.folds','test.percent','bg','bg.n','var.importance','response.curve','var.selection','setting','ncore','modelSettings','seed')
             .sdm...temp <- NULL; rm(.sdm...temp)
             dot <- list(...)
             ndot <- names(dot)
@@ -942,6 +1010,8 @@ setMethod('sdm', signature(formula='formula',data='sdmdata',methods='character')
               dot <- dot[w]
               names(dot) <- ndot
             }
+            
+            if (missing(formula)) formula <- NULL
             
             dot$data <- data
             dot$formula <- formula

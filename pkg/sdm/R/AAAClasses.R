@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date (last update):  July 2017
-# Version 3.7
+# Version 3.8
 # Licence GPL v3
 
 
@@ -725,8 +725,9 @@ setClass('.sdmCorSetting',
 setClass('.sdmVariables',
          representation(
            response='character',
-           numeric.vars='characterORnull',
-           factors='characterORnull',
+           distribution='character',
+           features.numeric='characterORnull',
+           features.factor='characterORnull',
            number.of.records='numeric'
          )
 )
@@ -947,7 +948,7 @@ setRefClass(".workload",
                     nFact <- names(nFact)[which(nFact)]
                     if (length(nFact) == 0) nFact <- NULL
                   }
-                  .self$sdmVariables[[sp]] <- new('.sdmVariables',response=sp,numeric.vars=.excludeVector(colnames(.self$train[[sp]]$sdmDataFrame),c(sp,nFact)),factors=nFact,number.of.records=if (is.null(.self$test)) nrow(.self$train[[sp]]$sdmDataFrame) else c(train=nrow(.self$train[[sp]]$sdmDataFrame),test=nrow(.self$test[[sp]]$sdmDataFrame)))
+                  .self$sdmVariables[[sp]] <- new('.sdmVariables',response=sp,distribution=.self$setting@distribution[[sp]],features.numeric=.excludeVector(colnames(.self$train[[sp]]$sdmDataFrame),c(sp,nFact)),features.factor=nFact,number.of.records=if (is.null(.self$test)) nrow(.self$train[[sp]]$sdmDataFrame) else c(train=nrow(.self$train[[sp]]$sdmDataFrame),test=nrow(.self$test[[sp]]$sdmDataFrame)))
                   .self$sdmVariables[[sp]]
                 }
               },
@@ -959,13 +960,13 @@ setRefClass(".workload",
                       if (train) n[[i]] <- .self$train[[sp]]$sdmDataFrame
                       else n[[i]] <- .self$test[[sp]]$sdmDataFrame
                     } #else n[[i]] <- 'sdmDataFrame'
-                  } else if (n[[i]] == '.sdmVariables') {
+                  } else if (n[[i]] == 'sdmVariables') {
                     n[[i]] <- getSdmVariables(sp)
                   } else if (n[[i]] == 'standard.formula') {
                     n[[i]] <- .getFormula(colnames(.self$train[[sp]]$sdmDataFrame),env=parent.frame(2))
                   } else if (n[[i]] == 'gam.mgcv.formula') {
                     sv <- .self$getSdmVariables(sp)
-                    n[[i]] <- .getFormula.gammgcv(c(sp,sv@numeric.vars),sv@factors,env=parent.frame(2))
+                    n[[i]] <- .getFormula.gammgcv(c(sp,sv@features.numeric),sv@features.factor,env=parent.frame(2))
                   } else if (n[[i]] == 'sdmX') {
                     if (data) {
                       if (train) n[[i]] <- .self$train[[sp]]$sdmDataFrame[,colnames(.self$train[[sp]]$sdmDataFrame) != sp,drop=FALSE]
@@ -1001,7 +1002,9 @@ setRefClass(".workload",
                       }
                     } #else 'sdmMatrix.norm'
                   } else if (n[[i]] == 'sdmdata') {
-                    n[[i]] <- .self$data
+                    if (data) n[[i]] <- .self$data
+                  } else if (n[[i]] == 'sdmSetting') {
+                    if (data) n[[i]] <- .self$setting
                   } else if (n[[i]] == 'sdmNrRecords') {
                     if (data) {
                       if (is.null(names(.self$replicates))) {
@@ -1020,7 +1023,6 @@ setRefClass(".workload",
                     if (data) {
                       ###
                     } #else 'sdmRaster'
-                    
                   } else if (n[[i]] %in% names(.self$params)) {
                     n[[i]] <- do.call(.self$params[[n[[i]]]],generateParams(.CharVector2List(names(formals(.self$params[[n[[i]]]]))),sp)) 
                   }
@@ -1036,7 +1038,7 @@ setRefClass(".workload",
                 } else .self$test[[sp]][[d]]
               },
               getReseved.names=function() {
-                c('sdmDataFrame','sdmX','sdmY','sdmRaster','sdmVariables','standard.formula','gam.mgcv.furmula','sdmMatrix','sdmMatrix.norm','sdmDataFrame.norm','sdmX.norm')
+                c('sdmdata','sdmDataFrame','sdmX','sdmY','sdmRaster','sdmVariables','standard.formula','gam.mgcv.furmula','sdmMatrix','sdmMatrix.norm','sdmDataFrame.norm','sdmX.norm','sdmNrRecords','sdmSetting')
               },
               getFitArgs=function(sp,mo) {
                 o <- list()
@@ -1045,11 +1047,10 @@ setRefClass(".workload",
                 ww <- which(names(pa) %in% .self$dataObject.names[[mo]][['fit']])
                 if (length(ww) == 0) stop('data object required by the fit function is not recognised!')
                 
-                
                 #for (nn in n) o[[nn]] <- .self$generateParams(pa[[nn]],sp,data=FALSE)
                 o <- .self$generateParams(pa[n],sp,data=FALSE)
                 #o[[n[ww]]] <- pa[[ww]]
-                o <- c(o,.self$arguments$fit[[mo]]$settings)
+                o <- c(o,.self$arguments$overriden_settings$fit[[mo]][[sp]])
                 o
               },
               getPredictArgs=function(sp,mo) {
@@ -1074,13 +1075,36 @@ setRefClass(".workload",
                   o <- c(o,.self$generateParams(pa[n],sp))
                 }
                 
-                o <- c(o,.self$arguments$predict[[mo]]$settings)
+                o <- c(o,.self$arguments$overriden_settings$predict[[mo]][[sp]])
                 o
               },
-              setRules=function() {
-                # check if any rule is defined as a function for each method,
-                # run the function to change the setting
-                
+              setRules=function(mo,sp) {
+                se <- .self$settingRules[[mo]]
+                if (class(se) == 'function') {
+                  fo <- as.list(formals(se))
+                  n <- names(fo)
+                  if (any(n == '...')) {
+                    .w <- which(n == '...')
+                    fo <- fo[-.w]
+                    n <- n[-.w]
+                  }
+                  .w <- .pmatch(unlist(fo),c(.self$getReseved.names(),'fitSettings','predictSettings'))
+                  if (!all(is.na(.w))) fo[which(!is.na(.w))] <- .w[which(!is.na(.w))]
+                  
+                  .ww <- which(fo %in% c('fitSettings','predictSettings'))
+                  if (length(.ww) > 0) {
+                    .w <- which(fo %in% c('fitSettings'))
+                    if (length(.w) > 0) {
+                      fo[[.w]] <- .self$arguments$fit[[mo]]$settings
+                    }
+                    .w <- which(fo %in% c('predictSettings'))
+                    if (length(.w) > 0) {
+                      fo[[.w]] <- .self$arguments$predict[[mo]]$settings
+                    }
+                    fo[-.ww] <- .self$generateParams(fo[-.ww],sp=sp)
+                    do.call(se,fo)
+                  } else NULL
+                } else NULL
               },
               .fit1=function(mID,method,sp,fit,fit.par,pred,pred.par,rID,n,dt) {
                 # fit1: when both dependent and independent tests are available
@@ -1243,7 +1267,7 @@ setRefClass(".workloadP",
                 IDs <- which(.self$runTasks$modelID %in% IDs)
                 m <- lapply(IDs,function(i) {
                   p <- .self$getPredictArgs(.self$runTasks$species[i],.self$runTasks$method[i])
-                  p[[1]] <- w$obj[[w$runTasks$speciesID[i]]][[w$runTasks$methodID[i]]][[w$runTasks$mIDChar[i]]]@object
+                  p[[1]] <- .self$obj[[.self$runTasks$speciesID[i]]][[.self$runTasks$methodID[i]]][[.self$runTasks$mIDChar[i]]]@object
                   
                   if (is.null(.self$modelFrame$specis_specific)) p[[2]] <- .self$modelFrame$features
                   else p[[2]] <- cbind(.self$modelFrame$features,.self$modelFrame$specis_specific[[.self$runTasks$species[i]]])
