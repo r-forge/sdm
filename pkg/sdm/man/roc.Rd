@@ -55,7 +55,9 @@ roc generates the plots of roc curves, and getRoc generate the values of ROC
 \seealso{# }
 
 \examples{
+\dontrun{
 #
+}
 }
 
 \keyword{spatial,species,data}

@@ -47,7 +47,9 @@ If a user aims to reproduce the same results for every time the code is running 
  an object of class \code{sdmSettings}
 }
 
-\references{#
+
+\references{
+Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for species distribution modelling, Ecography, DOI: 10.1111/ecog.01881
 }
 
 \author{Babak Naimi \email{naimi.b@gmail.com}
@@ -57,10 +59,12 @@ If a user aims to reproduce the same results for every time the code is running 
 \url{http://biogeoinformatics.org}
 }
 
-\seealso{ #}
+
 
 \examples{
+\dontrun{
 #
+}
 }
 
 \keyword{spatial,species,data}

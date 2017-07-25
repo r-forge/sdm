@@ -46,7 +46,9 @@ write.sdm(x,filename,overwrite,...)
 
 
 \examples{
+\dontrun{
 #
+}
 }
 
 \keyword{ write, write sdm}

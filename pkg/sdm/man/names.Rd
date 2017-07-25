@@ -45,7 +45,9 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 
 
 \examples{
+\dontrun{
 #
+}
 }
 
 \keyword{spatial}
