@@ -43,7 +43,7 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 }
 
 \examples{
-\dontrun{
+
 file <- system.file("external/data.sdd", package="sdm")
 
 d <- read.sdm(file)
@@ -55,7 +55,7 @@ head(df)
 
 # only the records with rID == c(1,2,3):
 as.data.frame(d, ind=1:3)
-}
+
 }
 
 \keyword{spatial}

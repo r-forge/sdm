@@ -59,11 +59,23 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 \url{http://biogeoinformatics.org}
 }
 
-
-
 \examples{
 \dontrun{
-#
+file <- system.file("external/pa_df.csv", package="sdm")
+
+df <- read.csv(file)
+
+head(df) 
+
+d <- sdmData(sp~b15+NDVI,train=df)
+
+# generate sdmSettings object:
+s <- sdmSetting(sp~., methods=c('glm','gam','brt','svm','rf'),
+          replication='sub',test.percent=30,n=10,modelSettings=list(brt=list(n.trees=500)))
+
+s
+
+
 }
 }
 
