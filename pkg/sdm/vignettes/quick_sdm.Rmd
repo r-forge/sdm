@@ -143,7 +143,7 @@ When you create the data object (d in the above example), you would be able to f
 ```{r, fig.width = 6, fig.height = 4}
 # in the following example, we use 3 different methods to fit the models.
 
-m1 <- sdm(Occurrence~.,data=d,methods=c('glm','gam','brt'))
+m1 <- sdm(Occurrence~.,data=d,methods=c('glm','bioclim','brt'))
 
 m1
 # as you can see, a report is generates shows how many percent of models were successful, and their performance
@@ -151,9 +151,9 @@ m1
 
 # in the above example, the performance statistics were calculated based on the training dataset (the data that were used to fit the mdoel). It is a better idea to have an independent dataset (if so, we would specify in the test argument of sdmData). However, for most of cases, there is no such data available, therefore, we can split the dataset as an alternative solution. Splitting (partitioning) can be one time or several times (several replicates). There are also several methods to do that (i.e., subsampling, cross-validation, bootsrapping)
 
-# Here we are going to fit 5 models and evaluate them through 2 runs of subsampling, each draw 30 percent of training data as test dataset:
+# Here we are going to fit 4 models and evaluate them through 2 runs of subsampling, each draw 30 percent of training data as test dataset:
 
-m2 <- sdm(Occurrence~.,data=d,methods=c('rf','fda','brt','svm','glm'),replicatin='sub',test.percent=30,n=2)
+m2 <- sdm(Occurrence~.,data=d,methods=c('rf','brt','bioclim','glm'),replicatin='sub',test.percent=30,n=2)
 
 m2
 
@@ -164,7 +164,7 @@ getModelInfo(m2) # info on runs including modelID, whether they are successfully
 roc(m2)
 
 # the plots can be smoothes:
-roc(m2,smooth=T)
+roc(m2,smooth=TRUE)
 ```
 
 
