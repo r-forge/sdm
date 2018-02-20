@@ -1901,7 +1901,7 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
     }
   } else .lapply <- .Lapply
   #-------
-  if (eval(expression({nc > 1 && .parMethod == 'foreach' && .require('foreach') && (.require('doParallel') | eval(parse(text='getDoParRegistered()')))}))) {
+  if (eval(expression({nc > 1 && .parMethod == 'foreach' && .require('foreach') && (.require('doParallel') | getDoParRegistered())}))) {
     .lapply <- .feLapply
     if (!eval(parse(text='getDoParRegistered()'))) {
       eval(expression({registerDoParallel(cl,nc)}))
