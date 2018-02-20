@@ -1754,11 +1754,9 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
 #--------
 .feLapply <- function(X, FUN,cl=NULL,...) {
   # wrapper to foreach (cl is not used, just to make it consistent with the other functions!)
-  if (requireNamespace("foreach",quietly = TRUE) & requireNamespace("doParallel",quietly = TRUE)) {
-    xx <- eval(expression({foreach::foreach(i=X,.errorhandling='pass') %dopar% FUN(i,...)}))
-    if (!is.null(names(X))) names(xx) <- names(X)
-    xx
-  }
+  xx <- eval(expression({foreach(i=X,.errorhandling='pass') %dopar% FUN(i,...)}))
+  if (!is.null(names(X))) names(xx) <- names(X)
+  xx
 }
 #---------
 .Lapply <- function(X, FUN, ...) {
@@ -1803,7 +1801,8 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
   
   if (is.null(w$ncore)) nc <- 1L
   else {
-    nc <- parallel::detectCores()
+    .require('parallel')
+    nc <- detectCores()
     if (w$ncore < nc) nc <- w$ncore
     if (.is.windows() || 'maxent' %in% models) .fork <- FALSE
   }
@@ -1824,9 +1823,9 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
   
   
   .memo <- NULL
-  if (requireNamespace("mraster",quietly = TRUE)) {
-    .memo <- mraster::memory(session=TRUE,echo=FALSE)
-    .wf <- eval(expression({mraster:::.change_unit(utils::object.size(w$data@features)*150,'B','M')[[1]]})) # guessing the size of modelObj
+  if (.require("mraster")) {
+    .memo <- eval(expression({memory(session=TRUE,echo=FALSE)}))
+    .wf <- eval(parse(text = "mraster:::.change_unit(utils::object.size(w$data@features)*150,'B','M')[[1]]")) # guessing the size of modelObj
     .mf <- floor(0.75 * ( .memo[2] /  .wf) )[[1]] # how many modelObj fits into 75% of the available memory!
     if (nrow(.run.info) > .mf) .ch <- ceiling(nrow(.run.info) / .mf)
     else .ch <- NULL
@@ -1867,7 +1866,6 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
   w$tasks <- .tasks
   
   if (nc > 1) {
-    requireNamespace('parallel',quietly = TRUE)
     if (.fork) {
       cl <- makeForkCluster(nc)
       .lapply <- .parLapply
@@ -1903,14 +1901,15 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
     }
   } else .lapply <- .Lapply
   #-------
-  if (eval(expression({nc > 1 && .parMethod == 'foreach' && requireNamespace('foreach',quietly = TRUE) && (requireNamespace('doParallel',quietly = TRUE) | eval(parse(text='getDoParRegistered()')))}))) {
+  if (eval(expression({nc > 1 && .parMethod == 'foreach' && .require('foreach') && (.require('doParallel') | eval(parse(text='getDoParRegistered()')))}))) {
     .lapply <- .feLapply
     if (!eval(parse(text='getDoParRegistered()'))) {
-      doParallel::registerDoParallel(cl,nc)
+      eval(expression({registerDoParallel(cl,nc)}))
     }
-    if (foreach::getDoParWorkers() != nc) {
-      warning(paste0('the number of workers registered for the foreach backend parallelisation is :',foreach::getDoParWorkers(),', which is different than the n.cores specified in the function! (n.cores is changed to this number)'))
-      nc <- foreach::getDoParWorkers()
+    
+    if (eval(expression({getDoParWorkers() != nc}))) {
+      eval(expression({warning(paste0('the number of workers registered for the foreach backend parallelisation is :',getDoParWorkers(),', which is different than the n.cores specified in the function! (n.cores is changed to this number)'))}))
+      eval(expression({nc <- getDoParWorkers()}))
     }
   }
   #-------
