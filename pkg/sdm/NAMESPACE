@@ -11,5 +11,5 @@ importFrom("raster",  "raster", "brick","cellFromXY","ncell","trim","extract","e
            "writeRaster","calc","addLayer","setZ","extension","sampleRandom","values","subset","update","getValues")
 exportClasses(sdmdata, sdmFormula,sdmEvaluate,sdmModels,sdmCorrelativeMethod)
 exportMethods(sdmData,sdm,sdmSetting,evaluates,roc,getRoc,add,getmethodNames,getmethod,getModelInfo,
-              getEvaluation,read.sdm,write.sdm,installAll,gui,getVarImp,ensemble)
-exportPattern("^[^\\.]")
+              getEvaluation,read.sdm,write.sdm,installAll,gui,getVarImp,ensemble,subset)
+exportPattern("^[[:alpha:]]+")
