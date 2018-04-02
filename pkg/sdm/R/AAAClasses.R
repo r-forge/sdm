@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date (last update):  April 2018
-# Version 4.1
+# Version 4.2
 # Licence GPL v3
 
 
@@ -1290,8 +1290,8 @@ setRefClass(".workload",
               filename='characterORnull'
             ),
             methods=list(
-              fit=function(species,models,runs,hasTest,.parMethod=.self$setting@parallelSettings@method,.hostnames=.self$setting@parallelSettings@hosts,.fork=.self$setting@parallelSettings@fork,filename=.self$filename) {
-                .fit(w=.self,species=species,runs=runs,hasTest = hasTest,.parMethod=.parMethod,.hostnames = .hostnames,.fork = .fork,filename = filename)
+              fit=function(woL=.self,species,models,runs,hasTest,.parMethod=.self$setting@parallelSettings@method,.hostnames=.self$setting@parallelSettings@hosts,.fork=.self$setting@parallelSettings@fork,filename=.self$filename) {
+                .fit(woL=woL,species=species,runs=runs,hasTest = hasTest,.parMethod=.parMethod,.hostnames = .hostnames,.fork = .fork,filename = filename)
               },
               getSdmVariables=function(sp,nFact) {
                 if (length(.self$sdmVariables) > 0 && !is.null(.self$sdmVariables[[sp]])) .self$sdmVariables[[sp]]
