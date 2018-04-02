@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  February 2018
-# Version 3.2
+# Date (last update):  April 2018
+# Version 3.3
 # Licence GPL v3
 #--------
 
@@ -930,7 +930,7 @@ setMethod('sdmSetting', signature(formula='ANY','sdmdata','character'),
                   warning('parallelisation method is not recognised; the default value ("parallel") is used!')
                   s@parallelSettings@method <- 'parallel'
                 }
-              }
+              } else s@parallelSettings@method <- 'parallel'
               #--
               if ('fork' %in% nparallel) {
                 if (is.logical(parallelSettings$fork)) {
@@ -954,7 +954,10 @@ setMethod('sdmSetting', signature(formula='ANY','sdmdata','character'),
               
             } else {
               if (!is.null(sobj)) s@parallelSettings <- sobj@parallelSettings
-              else s@parallelSettings@ncore <- ncore
+              else {
+                s@parallelSettings@ncore <- ncore
+                s@parallelSettings@fork <- !.is.windows()
+              }
             }
             
             #---------
@@ -1199,7 +1202,7 @@ setMethod('sdm', signature(formula='ANY',data='sdmdata',methods='.sdmCorSetting'
                           warning('parallelisation method is not recognised; the default value ("parallel") is used!')
                           s@parallelSettings@method <- 'parallel'
                         }
-                      }
+                      } else s@parallelSettings@method <- 'parallel'
                       #--
                       if ('fork' %in% nparallel) {
                         if (is.logical(parallelSettings$fork)) {
